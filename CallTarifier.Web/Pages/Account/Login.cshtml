@@ -1,0 +1,87 @@
+@page "/login"
+@model CallTarifier.Web.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    ViewData["IsLoginPage"] = true;
+    Layout = "_Layout";
+}
+
+<div class="login-page">
+    <div class="login-panel">
+        <div class="login-brand">
+            <span class="brand-mark large" aria-hidden="true"></span>
+            <h1>CallTarifier</h1>
+            <p>Sistema de tarificación de llamadas internas</p>
+        </div>
+
+        <form method="post" class="login-form" id="login-form" novalidate>
+            <div asp-validation-summary="ModelOnly" class="form-error" id="login-error" role="alert"></div>
+            <input type="hidden" asp-for="Input.IdToken" id="id-token" />
+
+            <div class="field">
+                <label asp-for="Input.Email">Correo</label>
+                <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="usuario@empresa.com" />
+                <span asp-validation-for="Input.Email" class="field-error"></span>
+            </div>
+
+            <div class="field">
+                <label asp-for="Input.Password">Contraseña</label>
+                <div class="password-field">
+                    <input asp-for="Input.Password" type="password" id="password-input" autocomplete="current-password" placeholder="••••••••" />
+                    <button type="button" class="btn-text" id="toggle-password" aria-label="Mostrar contraseña">Mostrar</button>
+                </div>
+                <span asp-validation-for="Input.Password" class="field-error"></span>
+            </div>
+
+            <div class="field-row">
+                <label class="checkbox">
+                    <input asp-for="Input.RememberMe" />
+                    <span>Recordar sesión</span>
+                </label>
+                <button type="button" class="btn-text" id="forgot-password">
+                    Recuperar contraseña
+                </button>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="login-submit">
+                <span class="btn-label">Iniciar sesión</span>
+                <span class="btn-loading" hidden>Ingresando...</span>
+            </button>
+
+            @if (Model.UseFirebaseAuth)
+            {
+                <p class="login-hint">Autenticación con Firebase Authentication</p>
+            }
+            else
+            {
+                <p class="login-hint">
+                    Demo mock: <code>juan.perez@chocopulse.local</code> / cualquier contraseña
+                </p>
+            }
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+@if (Model.UseFirebaseAuth)
+{
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script>
+        window.__firebaseConfig = {
+            apiKey: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.ApiKey)),
+            authDomain: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.AuthDomain)),
+            projectId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.ProjectId)),
+            storageBucket: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.StorageBucket)),
+            messagingSenderId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.MessagingSenderId)),
+            appId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.AppId)),
+            measurementId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.MeasurementId))
+        };
+    </script>
+    <script src="~/js/firebase-login.js" asp-append-version="true"></script>
+}
+else
+{
+    <script src="~/js/mock-login.js" asp-append-version="true"></script>
+}
+}

@@ -1,0 +1,27 @@
+@using System.Security.Claims
+@{
+    var name = User.FindFirstValue(ClaimTypes.Name) ?? "Usuario";
+    var extension = User.FindFirstValue("extension") ?? "—";
+    var branch = User.FindFirstValue("branch") ?? "—";
+}
+
+<header class="topbar">
+    <button type="button" class="icon-btn menu-toggle" id="menu-toggle" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+    </button>
+
+    <form class="topbar-search" method="get" asp-page="/Calls/Index" role="search">
+        <label class="sr-only" for="global-search">Buscar llamadas</label>
+        <input id="global-search" name="Search" type="search" placeholder="Buscar extensión, factura..." />
+    </form>
+
+    <div class="topbar-user">
+        <div class="user-meta">
+            <strong>@name</strong>
+            <span>@extension · @branch</span>
+        </div>
+        <form method="post" asp-page="/Account/Logout">
+            <button type="submit" class="btn btn-ghost btn-sm">Salir</button>
+        </form>
+    </div>
+</header>

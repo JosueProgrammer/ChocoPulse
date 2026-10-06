@@ -1,0 +1,69 @@
+@page "/calls"
+@model CallTarifier.Web.Pages.Calls.IndexModel
+@{
+    ViewData["Title"] = "Historial";
+}
+
+<section class="page-header">
+    <div>
+        <h1>Historial de llamadas</h1>
+        <p class="page-subtitle">Registros oficiales (datos mock en esta fase).</p>
+    </div>
+</section>
+
+<section class="panel">
+    <form method="get" class="filters">
+        <div class="field">
+            <label for="From">Desde</label>
+            <input type="date" id="From" name="From" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="field">
+            <label for="To">Hasta</label>
+            <input type="date" id="To" name="To" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="field">
+            <label for="Extension">Extensión</label>
+            <select id="Extension" name="Extension">
+                <option value="">Todas</option>
+                @foreach (var ext in Model.Extensions)
+                {
+                    if (Model.Filter.Extension == ext.Extension)
+                    {
+                        <option value="@ext.Extension" selected>@ext.Branch (@ext.Extension)</option>
+                    }
+                    else
+                    {
+                        <option value="@ext.Extension">@ext.Branch (@ext.Extension)</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="field">
+            <label for="Status">Estado</label>
+            <select id="Status" name="Status">
+                <option value="">Todos</option>
+                @foreach (var st in Model.Statuses)
+                {
+                    if (Model.Filter.Status == st)
+                    {
+                        <option value="@st" selected>@DisplayHelpers.StatusLabel(st)</option>
+                    }
+                    else
+                    {
+                        <option value="@st">@DisplayHelpers.StatusLabel(st)</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="field grow">
+            <label for="Search">Búsqueda</label>
+            <input type="search" id="Search" name="Search" value="@Model.Filter.Search" placeholder="Origen, destino, factura..." />
+        </div>
+        <div class="field field-actions">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a class="btn btn-ghost" asp-page="/Calls/Index">Limpiar</a>
+        </div>
+    </form>
+
+    <partial name="Partials/_CallTable" model="Model.Calls" />
+</section>

@@ -1,0 +1,9 @@
+@model CallTarifier.Web.Models.StatCardModel
+<div class="stat-card">
+    <p class="stat-value">@Model.Value</p>
+    <p class="stat-title">@Model.Title</p>
+    @if (!string.IsNullOrWhiteSpace(Model.Hint))
+    {
+        <p class="stat-hint">@Model.Hint</p>
+    }
+</div>

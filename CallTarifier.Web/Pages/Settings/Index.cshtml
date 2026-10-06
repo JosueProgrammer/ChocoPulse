@@ -1,0 +1,56 @@
+@page "/settings"
+@model CallTarifier.Web.Pages.Settings.IndexModel
+@{
+    ViewData["Title"] = "Configuración";
+}
+
+<section class="page-header">
+    <div>
+        <h1>Configuración</h1>
+        <p class="page-subtitle">Preferencias visibles. Los secretos AMI no se exponen aquí.</p>
+    </div>
+</section>
+
+<section class="settings-grid">
+    <article class="panel">
+        <h2>Telefonía</h2>
+        <dl class="detail-list">
+            <div><dt>Servidor SIP/WebRTC</dt><dd>@(string.IsNullOrWhiteSpace(Model.WebRtc.SipServer) ? "No configurado (Fase 3)" : Model.WebRtc.SipServer)</dd></div>
+            <div><dt>Dominio SIP</dt><dd>@(string.IsNullOrWhiteSpace(Model.WebRtc.SipDomain) ? "—" : Model.WebRtc.SipDomain)</dd></div>
+            <div><dt>WebSocket</dt><dd>@(string.IsNullOrWhiteSpace(Model.WebRtc.WebSocketUrl) ? "—" : Model.WebRtc.WebSocketUrl)</dd></div>
+            <div><dt>Extensión</dt><dd class="mono">@Model.CurrentUser?.Extension</dd></div>
+            <div><dt>Estado de conexión</dt><dd><span class="badge badge-neutral" id="settings-phone-state">Desconectado</span></dd></div>
+        </dl>
+    </article>
+
+    <article class="panel">
+        <h2>Tarifas</h2>
+        <dl class="detail-list">
+            <div><dt>Cargo de conexión</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.RingCharge)</dd></div>
+            <div><dt>Precio por segundo</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.PricePerSecond)</dd></div>
+            <div><dt>Precio por minuto</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.PricePerMinute)</dd></div>
+            <div><dt>IVA</dt><dd>@((Model.Tariffs.TaxRate * 100).ToString("0"))%</dd></div>
+            <div><dt>Cargo ring en no contestadas</dt><dd>@(Model.Tariffs.ChargeRingForUnansweredCalls ? "Sí" : "No")</dd></div>
+        </dl>
+    </article>
+
+    <article class="panel">
+        <h2>Usuario</h2>
+        <dl class="detail-list">
+            <div><dt>Nombre</dt><dd>@Model.CurrentUser?.Name</dd></div>
+            <div><dt>Correo</dt><dd>@Model.CurrentUser?.Email</dd></div>
+            <div><dt>Extensión</dt><dd class="mono">@Model.CurrentUser?.Extension</dd></div>
+            <div><dt>Sucursal</dt><dd>@Model.CurrentUser?.Branch</dd></div>
+            <div><dt>Rol</dt><dd>@Model.CurrentUser?.Role</dd></div>
+        </dl>
+    </article>
+
+    <article class="panel">
+        <h2>Aplicación</h2>
+        <dl class="detail-list">
+            <div><dt>Modo mock</dt><dd>@(Model.Application.UseMockData ? "Activo" : "Desactivado")</dd></div>
+            <div><dt>Firebase</dt><dd>No conectado (Fase 7)</dd></div>
+            <div><dt>AMI</dt><dd>Gestionado por CallTarifier.Integration</dd></div>
+        </dl>
+    </article>
+</section>

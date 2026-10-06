@@ -1,0 +1,47 @@
+﻿@using System.Security.Claims
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "CallTarifier") · CallTarifier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+@{
+    var isAuth = User.Identity?.IsAuthenticated == true;
+    var isLogin = string.Equals(ViewContext.RouteData.Values["page"]?.ToString(), "/Account/Login", StringComparison.OrdinalIgnoreCase)
+        || ViewData["IsLoginPage"] as bool? == true;
+}
+<body class="@(isAuth && !isLogin ? "app-shell" : "auth-shell")">
+@if (isAuth && !isLogin)
+{
+    <div class="app-frame">
+        <partial name="_Sidebar" />
+        <div class="app-main">
+            <partial name="_Topbar" />
+            <main class="app-content" id="main-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    <partial name="Partials/_IncomingCallModal" />
+    <partial name="Partials/_CallModal" />
+    <partial name="Partials/_ConfirmModal" />
+    <div id="toast-host" class="toast-host" aria-live="polite"></div>
+}
+else
+{
+    @RenderBody()
+    <div id="toast-host" class="toast-host" aria-live="polite"></div>
+}
+
+<script src="~/js/site.js" asp-append-version="true"></script>
+<script src="~/js/toast.js" asp-append-version="true"></script>
+<script src="~/js/webrtc/phone-client.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

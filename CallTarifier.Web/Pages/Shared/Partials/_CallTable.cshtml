@@ -1,0 +1,42 @@
+@model IReadOnlyList<Call>
+@if (Model is null || Model.Count == 0)
+{
+    <div class="empty-state">
+        <h3>Sin llamadas</h3>
+        <p>No hay registros que coincidan con los filtros seleccionados.</p>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Origen</th>
+                    <th>Destino</th>
+                    <th class="num">Duración</th>
+                    <th>Estado</th>
+                    <th class="num">Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var call in Model)
+            {
+                <tr>
+                    <td>@call.StartedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td><span class="mono">@call.Source</span></td>
+                    <td><span class="mono">@call.Destination</span></td>
+                    <td class="num">@DisplayHelpers.FormatDuration(call.DurationSeconds)</td>
+                    <td><partial name="Partials/_StatusBadge" model="call.Status" /></td>
+                    <td class="num">@DisplayHelpers.FormatMoney(call.Total)</td>
+                    <td>
+                        <a class="link" asp-page="/Calls/Detail" asp-route-id="@call.Id">Ver</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

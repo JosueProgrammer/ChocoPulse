@@ -1,0 +1,60 @@
+@page "/calls/dial"
+@model CallTarifier.Web.Pages.Calls.DialModel
+@{
+    ViewData["Title"] = "Marcador";
+}
+
+<section class="page-header">
+    <div>
+        <h1>Marcador</h1>
+        <p class="page-subtitle">Seleccione una extensión o marque manualmente.</p>
+    </div>
+</section>
+
+<section class="dialer-layout">
+    <article class="panel dialer-panel">
+        <label class="sr-only" for="dial-display">Número a marcar</label>
+        <input id="dial-display" class="dial-display mono" type="text" inputmode="tel" maxlength="8"
+               value="" placeholder="Extensión" autocomplete="off" />
+
+        <div class="keypad" id="numeric-keypad" role="group" aria-label="Teclado numérico">
+            @foreach (var key in new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#" })
+            {
+                <button type="button" class="keypad-key" data-key="@key">@key</button>
+            }
+        </div>
+
+        <div class="dialer-actions">
+            <button type="button" class="btn btn-ghost" id="dial-backspace" aria-label="Borrar">⌫</button>
+            <button type="button" class="btn btn-primary btn-call" id="dial-call">Llamar</button>
+            <button type="button" class="btn btn-ghost" id="dial-clear">Limpiar</button>
+        </div>
+        <p class="field-error" id="dial-error" hidden></p>
+        <p class="call-note">Fase 1: simulación local. WebRTC se conectará en la Fase 3.</p>
+    </article>
+
+    <article class="panel">
+        <h2>Extensiones</h2>
+        <div class="extension-list" id="extension-selector">
+            @foreach (var ext in Model.Extensions)
+            {
+                <button type="button"
+                        class="extension-item"
+                        data-extension="@ext.Extension"
+                        data-branch="@ext.Branch">
+                    <span class="ext-branch">@ext.Branch</span>
+                    <span class="ext-number mono">@ext.Extension</span>
+                </button>
+            }
+        </div>
+    </article>
+</section>
+
+@section Scripts {
+<script src="~/js/dialer.js" asp-append-version="true"></script>
+<script>
+    window.CallTarifierDialer.init({
+        validExtensions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Extensions.Select(e => e.Extension)))
+    });
+</script>
+}

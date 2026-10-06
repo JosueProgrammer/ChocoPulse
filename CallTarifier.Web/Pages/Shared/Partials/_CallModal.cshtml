@@ -1,0 +1,15 @@
+<div class="modal" id="active-call-modal" hidden role="dialog" aria-modal="true" aria-labelledby="active-call-title">
+    <div class="modal-card call-modal">
+        <p class="call-state" id="active-call-state">Llamando...</p>
+        <h2 id="active-call-title" class="modal-branch">—</h2>
+        <p class="sr-only" id="active-call-branch">—</p>
+        <p class="modal-ext mono" id="active-call-ext">—</p>
+        <p class="call-timer mono" id="active-call-timer">00:00:00</p>
+        <div class="modal-actions call-controls">
+            <button type="button" class="btn btn-secondary" id="call-mute">Silenciar</button>
+            <button type="button" class="btn btn-secondary" id="call-speaker">Altavoz</button>
+            <button type="button" class="btn btn-danger" id="call-hangup">Finalizar</button>
+        </div>
+        <p class="call-note">El temporizador es solo visual. La duración oficial proviene del CDR.</p>
+    </div>
+</div>

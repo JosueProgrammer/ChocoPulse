@@ -1,0 +1,47 @@
+@{
+    var page = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    string NavClass(string route) => page.StartsWith(route, StringComparison.OrdinalIgnoreCase) ? "nav-link active" : "nav-link";
+}
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+            <strong class="brand-name">CallTarifier</strong>
+            <span class="brand-tag">Tarificación</span>
+        </div>
+        <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Cerrar menú">×</button>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+        <a class="@NavClass("/Dashboard")" asp-page="/Dashboard/Index">
+            <span class="nav-icon" aria-hidden="true">▣</span> Dashboard
+        </a>
+        <a class="@NavClass("/Calls/Dial")" asp-page="/Calls/Dial">
+            <span class="nav-icon" aria-hidden="true">☎</span> Llamar
+        </a>
+        <a class="@(page.Equals("/Calls/Index", StringComparison.OrdinalIgnoreCase) || page.Equals("/Calls/Detail", StringComparison.OrdinalIgnoreCase) ? "nav-link active" : "nav-link")" asp-page="/Calls/Index">
+            <span class="nav-icon" aria-hidden="true">☰</span> Historial
+        </a>
+        <a class="@NavClass("/Statistics")" asp-page="/Statistics/Index">
+            <span class="nav-icon" aria-hidden="true">▦</span> Estadísticas
+        </a>
+        <a class="@NavClass("/Billing")" asp-page="/Billing/Index">
+            <span class="nav-icon" aria-hidden="true">▤</span> Facturación
+        </a>
+        <a class="@NavClass("/Extensions")" asp-page="/Extensions/Index">
+            <span class="nav-icon" aria-hidden="true">⌖</span> Extensiones
+        </a>
+        <a class="@NavClass("/Settings")" asp-page="/Settings/Index">
+            <span class="nav-icon" aria-hidden="true">⚙</span> Configuración
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="phone-status" id="phone-status" data-state="DISCONNECTED">
+            <span class="status-dot"></span>
+            <span class="status-text">Desconectado</span>
+        </div>
+    </div>
+</aside>
+<div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>

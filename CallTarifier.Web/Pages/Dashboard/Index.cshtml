@@ -1,0 +1,40 @@
+@page "/dashboard"
+@model CallTarifier.Web.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var s = Model.Summary;
+    var cards = new[]
+    {
+        new StatCardModel { Title = "Llamadas del mes", Value = s.MonthCalls.ToString(), Hint = "Realizadas y recibidas" },
+        new StatCardModel { Title = "Consumo acumulado", Value = DisplayHelpers.FormatMoney(s.AccumulatedCost), Hint = "Mes en curso" },
+        new StatCardModel { Title = "Facturas pendientes", Value = s.PendingInvoices.ToString(), Hint = "Por pagar" },
+        new StatCardModel { Title = "Salientes", Value = s.OutgoingCalls.ToString(), Hint = "Histórico mock" },
+        new StatCardModel { Title = "Entrantes", Value = s.IncomingCalls.ToString(), Hint = "Histórico mock" }
+    };
+}
+
+<section class="page-header">
+    <div>
+        <h1>Hola, @s.UserName.Split(' ').FirstOrDefault()</h1>
+        <p class="page-subtitle">
+            Extensión: <strong class="mono">@s.Extension</strong>
+            · Sucursal: <strong>@s.Branch</strong>
+        </p>
+    </div>
+    <a class="btn btn-primary" asp-page="/Calls/Dial">Nueva llamada</a>
+</section>
+
+<section class="stat-grid">
+    @foreach (var card in cards)
+    {
+        <partial name="Partials/_StatCard" model="card" />
+    }
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>Llamadas recientes</h2>
+        <a class="link" asp-page="/Calls/Index">Ver historial</a>
+    </div>
+    <partial name="Partials/_CallTable" model="s.RecentCalls" />
+</section>

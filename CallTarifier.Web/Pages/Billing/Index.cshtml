@@ -1,0 +1,63 @@
+@page "/billing"
+@model CallTarifier.Web.Pages.Billing.IndexModel
+@{
+    ViewData["Title"] = "Facturación";
+    var period = Model.CurrentPeriod;
+}
+
+<section class="page-header">
+    <div>
+        <h1>Facturación</h1>
+        <p class="page-subtitle">Resumen del período y facturas generadas.</p>
+    </div>
+</section>
+
+@if (period is not null)
+{
+    var periodCards = new[]
+    {
+        new StatCardModel { Title = "Total del período", Value = DisplayHelpers.FormatMoney(period.Total), Hint = $"{period.Month:00}/{period.Year}" },
+        new StatCardModel { Title = "Llamadas", Value = period.CallCount.ToString(), Hint = "Facturables" },
+        new StatCardModel { Title = "Subtotal", Value = DisplayHelpers.FormatMoney(period.Subtotal) },
+        new StatCardModel { Title = "IVA", Value = DisplayHelpers.FormatMoney(period.Tax), Hint = "15%" },
+        new StatCardModel { Title = "Estado", Value = DisplayHelpers.StatusLabel(period.Status) }
+    };
+
+    <section class="stat-grid">
+        @foreach (var card in periodCards)
+        {
+            <partial name="Partials/_StatCard" model="card" />
+        }
+    </section>
+}
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>Facturas</h2>
+    </div>
+
+    @if (Model.Invoices.Count == 0)
+    {
+        <div class="empty-state">
+            <h3>Sin facturas</h3>
+            <p>Aún no hay facturas en el período.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card-grid">
+            @foreach (var inv in Model.Invoices)
+            {
+                <a class="billing-card" asp-page="/Billing/Invoice" asp-route-number="@inv.Number">
+                    <div class="billing-card-top">
+                        <strong>@inv.Number</strong>
+                        <partial name="Partials/_StatusBadge" model="inv.Status" />
+                    </div>
+                    <p>@inv.Source → @inv.Destination</p>
+                    <p class="mono">@DisplayHelpers.FormatDuration(inv.DurationSeconds)</p>
+                    <p class="billing-total">@DisplayHelpers.FormatMoney(inv.Total)</p>
+                </a>
+            }
+        </div>
+    }
+</section>

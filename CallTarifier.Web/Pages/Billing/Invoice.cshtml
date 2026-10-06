@@ -1,0 +1,45 @@
+@page "/billing/invoice"
+@model CallTarifier.Web.Pages.Billing.InvoiceModel
+@{
+    ViewData["Title"] = Model.Invoice is null ? "Factura" : $"Factura {Model.Invoice.Number}";
+    var inv = Model.Invoice;
+}
+
+@if (inv is null)
+{
+    <section class="empty-state panel">
+        <h1>Factura no encontrada</h1>
+        <p>El número indicado no existe.</p>
+        <a class="btn btn-primary" asp-page="/Billing/Index">Volver</a>
+    </section>
+}
+else
+{
+    <section class="page-header">
+        <div>
+            <h1>Factura @inv.Number</h1>
+            <p class="page-subtitle">Emitida @inv.IssuedAt.ToString("dd/MM/yyyy HH:mm")</p>
+        </div>
+        <partial name="Partials/_StatusBadge" model="inv.Status" />
+    </section>
+
+    <section class="panel invoice-panel">
+        <dl class="detail-list">
+            <div><dt>Origen</dt><dd class="mono">@inv.Source — @DisplayHelpers.BranchFor(inv.Source)</dd></div>
+            <div><dt>Destino</dt><dd class="mono">@inv.Destination — @DisplayHelpers.BranchFor(inv.Destination)</dd></div>
+            <div><dt>Duración</dt><dd>@inv.DurationSeconds segundos</dd></div>
+            <div><dt>Cargo conexión</dt><dd>@DisplayHelpers.FormatMoney(inv.RingCharge)</dd></div>
+            <div><dt>Cargo llamada</dt><dd>@DisplayHelpers.FormatMoney(inv.CallCharge)</dd></div>
+            <div><dt>Subtotal</dt><dd>@DisplayHelpers.FormatMoney(inv.Subtotal)</dd></div>
+            <div><dt>IVA 15%</dt><dd>@DisplayHelpers.FormatMoney(inv.Tax)</dd></div>
+            <div class="highlight"><dt>TOTAL</dt><dd>@DisplayHelpers.FormatMoney(inv.Total)</dd></div>
+        </dl>
+        <div class="panel-actions">
+            <a class="btn btn-ghost" asp-page="/Billing/Index">Volver a facturación</a>
+            @if (!string.IsNullOrWhiteSpace(inv.CallId))
+            {
+                <a class="btn btn-secondary" asp-page="/Calls/Detail" asp-route-id="@inv.CallId">Ver llamada</a>
+            }
+        </div>
+    </section>
+}

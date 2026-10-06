@@ -1,0 +1,108 @@
+@page "/statistics"
+@model CallTarifier.Web.Pages.Statistics.IndexModel
+@{
+    ViewData["Title"] = "Estadísticas";
+    var s = Model.Summary;
+    var cards = new[]
+    {
+        new StatCardModel { Title = "Realizadas", Value = s.OutgoingCalls.ToString() },
+        new StatCardModel { Title = "Recibidas", Value = s.IncomingCalls.ToString() },
+        new StatCardModel { Title = "Perdidas", Value = s.MissedCalls.ToString() },
+        new StatCardModel { Title = "Duración total", Value = DisplayHelpers.FormatDuration(s.TotalDurationSeconds) },
+        new StatCardModel { Title = "Costo total", Value = DisplayHelpers.FormatMoney(s.TotalCost) },
+        new StatCardModel { Title = "Más llamada", Value = s.MostCalledExtension ?? "—", Hint = s.MostCalledBranch }
+    };
+}
+
+<section class="page-header">
+    <div>
+        <h1>Estadísticas</h1>
+        <p class="page-subtitle">Consumo y actividad por período.</p>
+    </div>
+</section>
+
+<section class="panel">
+    <form method="get" class="filters filters-compact">
+        <div class="chip-group" role="group" aria-label="Período rápido">
+            @foreach (var p in Model.Presets)
+            {
+                <a class="chip @(Model.Preset == p.Key ? "active" : "")"
+                   asp-page="/Statistics/Index"
+                   asp-route-preset="@p.Key">@p.Value</a>
+            }
+        </div>
+        <div class="field">
+            <label for="From">Desde</label>
+            <input type="date" id="From" name="From" value="@(Model.From?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="field">
+            <label for="To">Hasta</label>
+            <input type="date" id="To" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <input type="hidden" name="Preset" value="custom" />
+        <button type="submit" class="btn btn-primary">Aplicar rango</button>
+    </form>
+</section>
+
+<section class="stat-grid">
+    @foreach (var card in cards)
+    {
+        <partial name="Partials/_StatCard" model="card" />
+    }
+</section>
+
+<section class="detail-grid">
+    <article class="panel">
+        <h2>Llamadas por día</h2>
+        @if (s.CallsByDay.Count == 0)
+        {
+            <div class="empty-state compact"><p>Sin datos en el rango.</p></div>
+        }
+        else
+        {
+            <ul class="bar-list">
+                @foreach (var day in s.CallsByDay)
+                {
+                    var width = Math.Max(8, day.Count * 18);
+                    <li>
+                        <span>@day.Date.ToString("dd/MM")</span>
+                        <span class="bar" style="--w:@width%"></span>
+                        <strong>@day.Count</strong>
+                    </li>
+                }
+            </ul>
+        }
+    </article>
+
+    <article class="panel">
+        <h2>Consumo mensual</h2>
+        @if (s.MonthlyConsumption.Count == 0)
+        {
+            <div class="empty-state compact"><p>Sin datos mensuales.</p></div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mes</th>
+                            <th class="num">Llamadas</th>
+                            <th class="num">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var m in s.MonthlyConsumption)
+                    {
+                        <tr>
+                            <td>@m.Month.ToString("00")/@m.Year</td>
+                            <td class="num">@m.CallCount</td>
+                            <td class="num">@DisplayHelpers.FormatMoney(m.Total)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </article>
+</section>

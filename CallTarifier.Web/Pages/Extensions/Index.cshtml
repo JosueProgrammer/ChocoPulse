@@ -1,0 +1,37 @@
+@page "/extensions"
+@model CallTarifier.Web.Pages.Extensions.IndexModel
+@{
+    ViewData["Title"] = "Extensiones";
+}
+
+<section class="page-header">
+    <div>
+        <h1>Extensiones</h1>
+        <p class="page-subtitle">Extensiones Isabel PBX 4 (solo lectura en esta versión).</p>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sucursal</th>
+                    <th class="num">Extensión</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var ext in Model.Extensions)
+            {
+                <tr>
+                    <td>@ext.Branch</td>
+                    <td class="num mono">@ext.Extension</td>
+                    <td><span class="badge badge-success">@ext.Status</span></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <p class="call-note">No es posible modificar extensiones desde la aplicación en la primera versión.</p>
+</section>

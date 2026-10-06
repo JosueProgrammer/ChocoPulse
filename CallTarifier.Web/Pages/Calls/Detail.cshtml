@@ -1,0 +1,64 @@
+@page "/calls/detail"
+@model CallTarifier.Web.Pages.Calls.DetailModel
+@{
+    ViewData["Title"] = "Detalle de llamada";
+    var c = Model.Call;
+}
+
+@if (c is null)
+{
+    <section class="empty-state panel">
+        <h1>Llamada no encontrada</h1>
+        <p>El identificador no existe en los datos actuales.</p>
+        <a class="btn btn-primary" asp-page="/Calls/Index">Volver al historial</a>
+    </section>
+}
+else
+{
+    <section class="page-header">
+        <div>
+            <h1>Llamada</h1>
+            <p class="page-subtitle">ID <span class="mono">@c.Id</span></p>
+        </div>
+        <a class="btn btn-ghost" asp-page="/Calls/Index">Volver</a>
+    </section>
+
+    <section class="detail-grid">
+        <article class="panel">
+            <h2>Participantes</h2>
+            <dl class="detail-list">
+                <div><dt>Origen</dt><dd class="mono">@c.Source — @DisplayHelpers.BranchFor(c.Source)</dd></div>
+                <div><dt>Destino</dt><dd class="mono">@c.Destination — @DisplayHelpers.BranchFor(c.Destination)</dd></div>
+                <div><dt>Estado</dt><dd><partial name="Partials/_StatusBadge" model="c.Status" /></dd></div>
+            </dl>
+        </article>
+
+        <article class="panel">
+            <h2>Tiempos</h2>
+            <dl class="detail-list">
+                <div><dt>Inicio</dt><dd>@c.StartedAt.ToString("dd/MM/yyyy HH:mm:ss")</dd></div>
+                <div><dt>Contestada</dt><dd>@(c.AnsweredAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")</dd></div>
+                <div><dt>Finalizada</dt><dd>@(c.EndedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")</dd></div>
+                <div><dt>Duración</dt><dd>@c.DurationSeconds segundos (@DisplayHelpers.FormatDuration(c.DurationSeconds))</dd></div>
+            </dl>
+        </article>
+
+        <article class="panel">
+            <h2>Tarificación</h2>
+            <dl class="detail-list">
+                <div><dt>Cargo conexión</dt><dd>@DisplayHelpers.FormatMoney(c.RingCharge)</dd></div>
+                <div><dt>Cargo duración</dt><dd>@DisplayHelpers.FormatMoney(c.CallCharge)</dd></div>
+                <div><dt>Subtotal</dt><dd>@DisplayHelpers.FormatMoney(c.Subtotal)</dd></div>
+                <div><dt>IVA</dt><dd>@DisplayHelpers.FormatMoney(c.Tax)</dd></div>
+                <div class="highlight"><dt>Total</dt><dd>@DisplayHelpers.FormatMoney(c.Total)</dd></div>
+            </dl>
+            @if (!string.IsNullOrWhiteSpace(c.InvoiceId))
+            {
+                <p class="mt-2">
+                    Factura:
+                    <a class="link" asp-page="/Billing/Invoice" asp-route-number="@c.InvoiceId">@c.InvoiceId</a>
+                </p>
+            }
+        </article>
+    </section>
+}
