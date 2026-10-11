@@ -2,6 +2,7 @@
 @model CallTarifier.Web.Pages.Settings.IndexModel
 @{
     ViewData["Title"] = "Configuración";
+    var webrtcReady = !string.IsNullOrWhiteSpace(Model.WebRtc.WebSocketUrl);
 }
 
 <section class="page-header">
@@ -15,9 +16,9 @@
     <article class="panel">
         <h2>Telefonía</h2>
         <dl class="detail-list">
-            <div><dt>Servidor SIP/WebRTC</dt><dd>@(string.IsNullOrWhiteSpace(Model.WebRtc.SipServer) ? "No configurado (Fase 3)" : Model.WebRtc.SipServer)</dd></div>
+            <div><dt>Servidor SIP/WebRTC</dt><dd>@(string.IsNullOrWhiteSpace(Model.WebRtc.SipServer) ? "Pendiente WSS" : Model.WebRtc.SipServer)</dd></div>
             <div><dt>Dominio SIP</dt><dd>@(string.IsNullOrWhiteSpace(Model.WebRtc.SipDomain) ? "—" : Model.WebRtc.SipDomain)</dd></div>
-            <div><dt>WebSocket</dt><dd>@(string.IsNullOrWhiteSpace(Model.WebRtc.WebSocketUrl) ? "—" : Model.WebRtc.WebSocketUrl)</dd></div>
+            <div><dt>WebSocket</dt><dd>@(webrtcReady ? Model.WebRtc.WebSocketUrl : "No configurado")</dd></div>
             <div><dt>Extensión</dt><dd class="mono">@Model.CurrentUser?.Extension</dd></div>
             <div><dt>Estado de conexión</dt><dd><span class="badge badge-neutral" id="settings-phone-state">Desconectado</span></dd></div>
         </dl>
@@ -48,8 +49,8 @@
     <article class="panel">
         <h2>Aplicación</h2>
         <dl class="detail-list">
-            <div><dt>Modo mock</dt><dd>@(Model.Application.UseMockData ? "Activo" : "Desactivado")</dd></div>
-            <div><dt>Firebase</dt><dd>No conectado (Fase 7)</dd></div>
+            <div><dt>Modo datos</dt><dd>Firestore (producción)</dd></div>
+            <div><dt>Firebase Auth</dt><dd>Activo</dd></div>
             <div><dt>AMI</dt><dd>Gestionado por CallTarifier.Integration</dd></div>
         </dl>
     </article>

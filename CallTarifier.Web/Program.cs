@@ -31,7 +31,7 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Logger.LogInformation(
-    "CallTarifier.Web started. UseMockData={UseMockData}",
-    builder.Configuration.GetValue("Application:UseMockData", true));
+    "CallTarifier.Web started. FirebaseAuth=true ProjectId={ProjectId}",
+    builder.Configuration["Firebase:ProjectId"]);
 
 app.Run();

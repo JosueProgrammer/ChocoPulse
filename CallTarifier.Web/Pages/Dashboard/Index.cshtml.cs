@@ -20,5 +20,8 @@ public class IndexModel : PageModel
     {
         var extension = User.FindFirstValue("extension") ?? "4000";
         Summary = await _callService.GetDashboardAsync(extension, cancellationToken);
+        Summary.UserName = User.FindFirstValue(ClaimTypes.Name) ?? "Usuario";
+        Summary.Branch = User.FindFirstValue("branch") ?? Summary.Branch;
+        Summary.Extension = extension;
     }
 }

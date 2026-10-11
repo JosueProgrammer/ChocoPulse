@@ -4,5 +4,5 @@ public sealed class ApplicationOptions
 {
     public const string SectionName = "Application";
 
-    public bool UseMockData { get; set; } = true;
+    public bool EnableCdrBackfill { get; set; }
 }

@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using CallTarifier.Web.Configuration;
-using CallTarifier.Web.Models;
 using CallTarifier.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,8 +30,6 @@ public class LoginModel : PageModel
 
     public string? ReturnUrl { get; set; }
 
-    public bool UseFirebaseAuth => _authService.UsesFirebase;
-
     public FirebaseOptions Firebase => _firebaseOptions;
 
     public void OnGet(string? returnUrl = null)
@@ -50,44 +47,18 @@ public class LoginModel : PageModel
     {
         ReturnUrl = returnUrl;
 
-        AppUser? user;
-
-        if (UseFirebaseAuth)
+        if (string.IsNullOrWhiteSpace(Input.IdToken))
         {
-            if (string.IsNullOrWhiteSpace(Input.IdToken))
-            {
-                ModelState.AddModelError(string.Empty, "No se recibió el token de autenticación.");
-                return Page();
-            }
-
-            user = await _authService.SignInWithIdTokenAsync(Input.IdToken, Input.RememberMe, cancellationToken);
-            if (user is null)
-            {
-                ModelState.AddModelError(string.Empty, "Sesión de Firebase inválida o expirada.");
-                _logger.LogWarning("Firebase ID token verification failed");
-                return Page();
-            }
+            ModelState.AddModelError(string.Empty, "No se recibió el token de autenticación.");
+            return Page();
         }
-        else
+
+        var user = await _authService.SignInWithIdTokenAsync(Input.IdToken, Input.RememberMe, cancellationToken);
+        if (user is null)
         {
-            if (string.IsNullOrWhiteSpace(Input.Email) || string.IsNullOrWhiteSpace(Input.Password))
-            {
-                ModelState.AddModelError(string.Empty, "Correo y contraseña son obligatorios.");
-                return Page();
-            }
-
-            user = await _authService.SignInAsync(
-                Input.Email,
-                Input.Password,
-                Input.RememberMe,
-                cancellationToken);
-
-            if (user is null)
-            {
-                ModelState.AddModelError(string.Empty, "Correo o contraseña incorrectos.");
-                _logger.LogWarning("Mock login failed for {Email}", Input.Email);
-                return Page();
-            }
+            ModelState.AddModelError(string.Empty, "Sesión de Firebase inválida o expirada.");
+            _logger.LogWarning("Firebase ID token verification failed");
+            return Page();
         }
 
         if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))

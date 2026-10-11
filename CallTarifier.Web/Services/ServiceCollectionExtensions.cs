@@ -1,5 +1,4 @@
 using CallTarifier.Web.Configuration;
-using CallTarifier.Web.Services.Mock;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace CallTarifier.Web.Services;
@@ -17,31 +16,17 @@ public static class ServiceCollectionExtensions
         services.Configure<AsteriskOptions>(configuration.GetSection(AsteriskOptions.SectionName));
 
         services.AddHttpContextAccessor();
-        services.AddSingleton<MockDataStore>(_ => MockDataStore.Instance);
         services.AddSingleton<ITarificationService, TarificationService>();
         services.AddSingleton<FirebaseAdminBootstrap>();
+        services.AddSingleton<IFirestoreDbFactory, FirestoreDbFactory>();
 
-        var appOptions = configuration.GetSection(ApplicationOptions.SectionName).Get<ApplicationOptions>()
-            ?? new ApplicationOptions();
-        var firebaseOptions = configuration.GetSection(FirebaseOptions.SectionName).Get<FirebaseOptions>()
-            ?? new FirebaseOptions();
-
-        var useFirebaseAuth = appOptions.UseFirebaseAuth && firebaseOptions.IsWebConfigured;
-        if (useFirebaseAuth)
-        {
-            services.AddScoped<IAuthService, FirebaseAuthService>();
-        }
-        else
-        {
-            services.AddScoped<IAuthService, MockAuthService>();
-        }
-
-        // Data services remain mock until later phases.
-        services.AddScoped<ICallService, MockCallService>();
-        services.AddScoped<IInvoiceService, MockInvoiceService>();
-        services.AddScoped<IExtensionService, MockExtensionService>();
-        services.AddScoped<IStatisticsService, MockStatisticsService>();
-        services.AddScoped<IFirebaseService, MockFirebaseService>();
+        services.AddScoped<IAuthService, FirebaseAuthService>();
+        services.AddScoped<ICallService, FirestoreCallService>();
+        services.AddScoped<IInvoiceService, FirestoreInvoiceService>();
+        services.AddScoped<IExtensionService, FirestoreExtensionService>();
+        services.AddScoped<IStatisticsService, FirestoreStatisticsService>();
+        services.AddScoped<IFirebaseService, FirestoreFirebaseService>();
+        services.AddScoped<IWebRtcSessionService, WebRtcSessionService>();
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>

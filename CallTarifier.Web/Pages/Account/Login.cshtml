@@ -48,40 +48,24 @@
                 <span class="btn-loading" hidden>Ingresando...</span>
             </button>
 
-            @if (Model.UseFirebaseAuth)
-            {
-                <p class="login-hint">Autenticación con Firebase Authentication</p>
-            }
-            else
-            {
-                <p class="login-hint">
-                    Demo mock: <code>juan.perez@chocopulse.local</code> / cualquier contraseña
-                </p>
-            }
+            <p class="login-hint">Autenticación con Firebase Authentication</p>
         </form>
     </div>
 </div>
 
 @section Scripts {
-@if (Model.UseFirebaseAuth)
-{
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-    <script>
-        window.__firebaseConfig = {
-            apiKey: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.ApiKey)),
-            authDomain: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.AuthDomain)),
-            projectId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.ProjectId)),
-            storageBucket: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.StorageBucket)),
-            messagingSenderId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.MessagingSenderId)),
-            appId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.AppId)),
-            measurementId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.MeasurementId))
-        };
-    </script>
-    <script src="~/js/firebase-login.js" asp-append-version="true"></script>
-}
-else
-{
-    <script src="~/js/mock-login.js" asp-append-version="true"></script>
-}
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script>
+    window.__firebaseConfig = {
+        apiKey: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.ApiKey)),
+        authDomain: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.AuthDomain)),
+        projectId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.ProjectId)),
+        storageBucket: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.StorageBucket)),
+        messagingSenderId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.MessagingSenderId)),
+        appId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.AppId)),
+        measurementId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Firebase.MeasurementId))
+    };
+</script>
+<script src="~/js/firebase-login.js" asp-append-version="true"></script>
 }

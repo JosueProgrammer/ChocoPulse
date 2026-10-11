@@ -71,8 +71,7 @@ window.CallTarifierDialer = (() => {
       try {
         await window.PhoneClient?.call(extension, branch);
       } catch (err) {
-        setError('No se pudo iniciar la llamada.');
-        window.CallTarifierToast?.show('Error al iniciar la llamada', 'error');
+        setError(err?.message || 'No se pudo iniciar la llamada WebRTC.');
         console.error(err);
       }
     });

@@ -1,57 +1,76 @@
-using CallTarifier.Integration.Configuration;
 using CallTarifier.Integration.Services.Ami;
 using CallTarifier.Integration.Services.Calls;
 using CallTarifier.Integration.Services.Cdr;
 using CallTarifier.Integration.Services.Firebase;
 using CallTarifier.Integration.Services.Invoices;
-using Microsoft.Extensions.Options;
 
 namespace CallTarifier.Integration;
 
 public sealed class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private readonly ApplicationOptions _application;
     private readonly IAmiListenerService _amiListener;
     private readonly ICdrProcessor _cdrProcessor;
     private readonly ICallProcessor _callProcessor;
     private readonly IInvoiceService _invoiceService;
     private readonly IFirebaseService _firebaseService;
+    private readonly ICdrBackfillService _cdrBackfill;
 
     public Worker(
         ILogger<Worker> logger,
-        IOptions<ApplicationOptions> application,
         IAmiListenerService amiListener,
         ICdrProcessor cdrProcessor,
         ICallProcessor callProcessor,
         IInvoiceService invoiceService,
-        IFirebaseService firebaseService)
+        IFirebaseService firebaseService,
+        ICdrBackfillService cdrBackfill)
     {
         _logger = logger;
-        _application = application.Value;
         _amiListener = amiListener;
         _cdrProcessor = cdrProcessor;
         _callProcessor = callProcessor;
         _invoiceService = invoiceService;
         _firebaseService = firebaseService;
+        _cdrBackfill = cdrBackfill;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation(
-            "CallTarifier.Integration started. UseMockData={UseMockData}",
-            _application.UseMockData);
+        _logger.LogInformation("CallTarifier.Integration started (live AMI/CDR/Firebase)");
+
+        try
+        {
+            await _firebaseService.EnsureSeedAsync(stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Firestore seed failed; continuing AMI loop");
+        }
 
         await _amiListener.StartAsync(stoppingToken);
+        await _callProcessor.ProcessPendingAsync(stoppingToken);
+
+        try
+        {
+            await _cdrBackfill.RunOnceAsync(stoppingToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "CDR backfill skipped");
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
                 await _cdrProcessor.ProcessAsync(stoppingToken);
-                await _callProcessor.ProcessPendingAsync(stoppingToken);
                 await _invoiceService.GeneratePendingAsync(stoppingToken);
                 await _firebaseService.SynchronizeAsync(stoppingToken);
+
+                if (!_amiListener.IsConnected)
+                {
+                    _logger.LogWarning("AMI not connected");
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

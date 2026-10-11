@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>calltarifier-web-8f2c1a4e-9b7d-4e6a-a1c3-5d8e0f2b9c71</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

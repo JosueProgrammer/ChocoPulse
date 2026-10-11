@@ -1,7 +1,7 @@
 /**
- * PhoneClient — abstracción SIP/WebRTC.
- * Fase 1: stub local sin credenciales ni conexión real.
- * Fase 3: conectar con Isabel PBX 4 usando configuración segura del servidor.
+ * PhoneClient — JsSIP over WebRTC against Issabel (WSS).
+ * Credentials from GET /api/webrtc/session (never hardcoded).
+ * Library: JsSIP (browser UMD). SIP.js equivalent flow.
  */
 (() => {
   const States = Object.freeze({
@@ -21,9 +21,13 @@
       this.state = States.DISCONNECTED;
       this._listeners = new Set();
       this._muted = false;
-      this._speaker = false;
+      this._speaker = true;
       this._timerId = null;
       this._elapsed = 0;
+      this._sessionCfg = null;
+      this._ua = null;
+      this._session = null;
+      this._remoteAudio = null;
       this._currentExtension = null;
       this._currentBranch = null;
     }
@@ -37,25 +41,96 @@
       return this.state;
     }
 
-    async connect(_config) {
-      this._setState(States.CONNECTING);
-      // No real SIP connection in Phase 1.
-      await delay(250);
-      this._setState(States.REGISTERING);
-      await delay(250);
-      this._setState(States.REGISTERED);
-      console.info('WebRTC registration skipped (mock mode)');
-      return true;
+    async connect() {
+      try {
+        this._setState(States.CONNECTING);
+        console.info('WebRTC registration started');
+
+        if (typeof JsSIP === 'undefined') {
+          throw new Error('JsSIP no cargado');
+        }
+
+        const res = await fetch('/api/webrtc/session', {
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' }
+        });
+
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || 'No se pudo obtener sesión WebRTC');
+        }
+
+        this._sessionCfg = await res.json();
+        await this._startUa();
+        return true;
+      } catch (err) {
+        console.error('WebRTC connect failed', err);
+        this._setState(States.ERROR);
+        window.CallTarifierToast?.show(err.message || 'Error WebRTC', 'error');
+        return false;
+      }
     }
 
-    async register(_extension, _credentials) {
-      this._setState(States.REGISTERING);
-      await delay(200);
-      this._setState(States.REGISTERED);
-      console.info('WebRTC registration successful (mock)');
+    async _startUa() {
+      const cfg = this._sessionCfg;
+      this._ensureRemoteAudio();
+
+      if (this._ua) {
+        try { this._ua.stop(); } catch { /* ignore */ }
+      }
+
+      const socket = new JsSIP.WebSocketInterface(cfg.webSocketUrl);
+      const uri = `sip:${cfg.authorizationUsername}@${cfg.sipDomain}`;
+
+      this._ua = new JsSIP.UA({
+        sockets: [socket],
+        uri,
+        password: cfg.authorizationPassword,
+        authorization_user: cfg.authorizationUsername,
+        display_name: cfg.extension,
+        session_timers: false,
+        register: true,
+        pcConfig: cfg.iceServersEnabled
+          ? { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+          : { iceServers: [] }
+      });
+
+      this._ua.on('connecting', () => this._setState(States.CONNECTING));
+      this._ua.on('connected', () => this._setState(States.REGISTERING));
+      this._ua.on('registered', () => {
+        this._setState(States.REGISTERED);
+        console.info('WebRTC registration successful');
+      });
+      this._ua.on('unregistered', () => {
+        if (this.state !== States.ERROR && this.state !== States.ENDING) {
+          this._setState(States.DISCONNECTED);
+        }
+      });
+      this._ua.on('registrationFailed', (e) => {
+        console.error('WebRTC registration failed', e?.cause);
+        this._setState(States.ERROR);
+        window.CallTarifierToast?.show('Error de registro SIP', 'error');
+      });
+      this._ua.on('disconnected', () => {
+        if (this.state !== States.ENDING) {
+          this._setState(States.DISCONNECTED);
+        }
+      });
+      this._ua.on('newRTCSession', (data) => this._onNewSession(data));
+
+      this._ua.start();
     }
 
     async call(extension, branch = '') {
+      if (!this._ua || !this._ua.isRegistered()) {
+        const ok = await this.connect();
+        if (!ok) throw new Error('WebRTC no registrado');
+        await waitUntil(() => this.state === States.REGISTERED || this.state === States.ERROR, 8000);
+        if (this.state !== States.REGISTERED) {
+          throw new Error('Registro SIP no disponible');
+        }
+      }
+
       if (!extension) {
         throw new Error('Extensión requerida');
       }
@@ -64,32 +139,66 @@
       this._currentBranch = branch;
       this._setState(States.CALLING);
       this._showActiveCall('Llamando', extension, branch);
-      console.info('Call started (mock)', extension);
+      console.info('Call started', extension);
 
-      await delay(1200);
-      if (this.state === States.CALLING) {
-        this._setState(States.RINGING);
-        this._showActiveCall('Sonando', extension, branch);
-      }
+      const eventHandlers = {
+        peerconnection: (e) => this._bindPeerConnection(e.peerconnection),
+        connecting: () => {
+          this._setState(States.CALLING);
+          this._showActiveCall('Llamando', extension, branch);
+        },
+        progress: () => {
+          this._setState(States.RINGING);
+          this._showActiveCall('Sonando', extension, branch);
+        },
+        accepted: () => {
+          this._setState(States.CONNECTED);
+          this._showActiveCall('Conectado', extension, branch);
+          this._startTimer();
+          console.info('Call answered');
+        },
+        confirmed: () => {
+          this._setState(States.CONNECTED);
+          this._showActiveCall('Conectado', extension, branch);
+        },
+        ended: () => {
+          this._stopTimer();
+          this._cleanupCall();
+          this._setState(States.REGISTERED);
+          console.info('Call ended');
+        },
+        failed: (e) => {
+          console.error('Call failed', e?.cause);
+          this._stopTimer();
+          this._cleanupCall();
+          this._setState(States.REGISTERED);
+          window.CallTarifierToast?.show('Llamada fallida o ocupada', 'error');
+        }
+      };
 
-      await delay(1000);
-      if (this.state === States.RINGING || this.state === States.CALLING) {
-        this._setState(States.CONNECTED);
-        this._showActiveCall('Conectado', extension, branch);
-        this._startTimer();
-        console.info('Call answered (mock)', extension);
-      }
+      this._session = this._ua.call(`sip:${extension}@${this._sessionCfg.sipDomain}`, {
+        eventHandlers,
+        mediaConstraints: { audio: true, video: false },
+        pcConfig: this._sessionCfg.iceServersEnabled
+          ? { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+          : { iceServers: [] }
+      });
     }
 
     async answer() {
+      if (!this._session || !this._session.isInProgress()) return;
       this._hideIncoming();
-      this._setState(States.CONNECTED);
-      this._showActiveCall('Conectado', this._currentExtension || '—', this._currentBranch || '');
-      this._startTimer();
+      this._session.answer({
+        mediaConstraints: { audio: true, video: false }
+      });
+      console.info('Call answered');
     }
 
     async reject() {
-      this._hideIncoming();
+      if (this._session && this._session.isInProgress()) {
+        try { this._session.terminate(); } catch { /* ignore */ }
+      }
+      this._cleanupCall();
       this._setState(States.REGISTERED);
     }
 
@@ -97,14 +206,22 @@
       this._setState(States.ENDING);
       this._showActiveCall('Finalizando', this._currentExtension || '—', this._currentBranch || '');
       this._stopTimer();
-      await delay(400);
-      this._hideActiveCall();
-      this._setState(States.REGISTERED);
-      console.info('Call ended (mock)');
+      try {
+        this._session?.terminate();
+      } catch (err) {
+        console.warn('Hangup error', err);
+      }
+      this._cleanupCall();
+      this._setState(this._ua?.isRegistered() ? States.REGISTERED : States.DISCONNECTED);
+      console.info('Call ended');
     }
 
     setMute(muted) {
       this._muted = !!muted;
+      try {
+        if (this._muted) this._session?.mute({ audio: true });
+        else this._session?.unmute({ audio: true });
+      } catch { /* ignore */ }
       return this._muted;
     }
 
@@ -114,6 +231,7 @@
 
     setSpeaker(enabled) {
       this._speaker = !!enabled;
+      if (this._remoteAudio) this._remoteAudio.muted = !this._speaker;
       return this._speaker;
     }
 
@@ -121,16 +239,77 @@
       return this.setSpeaker(!this._speaker);
     }
 
-    simulateIncoming(extension, branch) {
-      this._currentExtension = extension;
-      this._currentBranch = branch;
-      this._setState(States.RINGING);
-      const modal = document.getElementById('incoming-call-modal');
-      const extEl = document.getElementById('incoming-ext');
-      const branchEl = document.getElementById('incoming-branch');
-      if (extEl) extEl.textContent = extension;
-      if (branchEl) branchEl.textContent = branch;
-      if (modal) modal.hidden = false;
+    _onNewSession(data) {
+      const session = data.session;
+      this._session = session;
+
+      session.on('peerconnection', (e) => this._bindPeerConnection(e.peerconnection));
+      session.on('ended', () => {
+        this._stopTimer();
+        this._cleanupCall();
+        this._setState(States.REGISTERED);
+        console.info('Call ended');
+      });
+      session.on('failed', () => {
+        this._stopTimer();
+        this._cleanupCall();
+        this._setState(States.REGISTERED);
+      });
+      session.on('accepted', () => {
+        this._setState(States.CONNECTED);
+        this._showActiveCall('Conectado', this._currentExtension || '—', this._currentBranch || '');
+        this._startTimer();
+        console.info('Call answered');
+      });
+
+      if (session.direction === 'incoming') {
+        const from = session.remote_identity?.uri?.user || '—';
+        this._currentExtension = from;
+        this._currentBranch = '';
+        this._setState(States.RINGING);
+
+        const modal = document.getElementById('incoming-call-modal');
+        const extEl = document.getElementById('incoming-ext');
+        const branchEl = document.getElementById('incoming-branch');
+        if (extEl) extEl.textContent = from;
+        if (branchEl) branchEl.textContent = 'Llamada entrante';
+        if (modal) modal.hidden = false;
+      }
+    }
+
+    _bindPeerConnection(pc) {
+      if (!pc || !this._remoteAudio) return;
+      pc.addEventListener('track', (event) => {
+        if (event.streams && event.streams[0]) {
+          this._remoteAudio.srcObject = event.streams[0];
+        } else {
+          const stream = new MediaStream([event.track]);
+          this._remoteAudio.srcObject = stream;
+        }
+        this._remoteAudio.muted = !this._speaker;
+        this._remoteAudio.play().catch(() => { /* autoplay */ });
+      });
+    }
+
+    _ensureRemoteAudio() {
+      if (this._remoteAudio) return;
+      let el = document.getElementById('webrtc-remote-audio');
+      if (!el) {
+        el = document.createElement('audio');
+        el.id = 'webrtc-remote-audio';
+        el.autoplay = true;
+        el.playsInline = true;
+        el.style.display = 'none';
+        document.body.appendChild(el);
+      }
+      this._remoteAudio = el;
+    }
+
+    _cleanupCall() {
+      this._session = null;
+      this._hideActiveCall();
+      this._hideIncoming();
+      if (this._remoteAudio) this._remoteAudio.srcObject = null;
     }
 
     _setState(next) {
@@ -143,27 +322,17 @@
 
     _syncStatusUi(state) {
       const el = document.getElementById('phone-status');
-      if (!el) return;
-      el.dataset.state = state;
-      const text = el.querySelector('.status-text');
-      if (text) {
-        const labels = {
-          DISCONNECTED: 'Desconectado',
-          CONNECTING: 'Conectando...',
-          REGISTERING: 'Registrando...',
-          REGISTERED: 'Registrado',
-          CALLING: 'Llamando...',
-          RINGING: 'Sonando...',
-          CONNECTED: 'En llamada',
-          ENDING: 'Finalizando...',
-          ERROR: 'Error'
-        };
-        text.textContent = labels[state] || state;
+      if (el) {
+        el.dataset.state = state;
+        const text = el.querySelector('.status-text');
+        if (text) text.textContent = labelFor(state);
       }
-
       const settingsState = document.getElementById('settings-phone-state');
       if (settingsState) {
-        settingsState.textContent = labelsSafe(state);
+        settingsState.textContent = labelFor(state);
+        settingsState.className = state === 'ERROR'
+          ? 'badge badge-warning'
+          : (state === 'REGISTERED' || state === 'CONNECTED' ? 'badge badge-success' : 'badge badge-neutral');
       }
     }
 
@@ -208,10 +377,6 @@
     }
   }
 
-  function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
   function formatHms(totalSeconds) {
     const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
     const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
@@ -219,7 +384,7 @@
     return `${h}:${m}:${s}`;
   }
 
-  function labelsSafe(state) {
+  function labelFor(state) {
     const map = {
       DISCONNECTED: 'Desconectado',
       CONNECTING: 'Conectando...',
@@ -229,9 +394,21 @@
       RINGING: 'Sonando...',
       CONNECTED: 'En llamada',
       ENDING: 'Finalizando...',
-      ERROR: 'Error'
+      ERROR: 'Error WebRTC'
     };
     return map[state] || state;
+  }
+
+  function waitUntil(predicate, timeoutMs) {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const id = setInterval(() => {
+        if (predicate() || Date.now() - start > timeoutMs) {
+          clearInterval(id);
+          resolve();
+        }
+      }, 100);
+    });
   }
 
   const client = new PhoneClient();
@@ -248,9 +425,8 @@
   document.getElementById('incoming-answer')?.addEventListener('click', () => client.answer());
   document.getElementById('incoming-reject')?.addEventListener('click', () => client.reject());
 
-  // Auto-bootstrap mock registration for authenticated shell pages.
   if (document.body.classList.contains('app-shell')) {
-    client.connect({}).catch(() => client._setState(States.ERROR));
+    client.connect();
   }
 
   window.PhoneClient = client;

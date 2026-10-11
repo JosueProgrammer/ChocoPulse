@@ -1,4 +1,7 @@
 ﻿@using System.Security.Claims
+@using CallTarifier.Web.Configuration
+@using Microsoft.Extensions.Options
+@inject IOptions<WebRtcOptions> WebRtcOptions
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -15,6 +18,7 @@
     var isAuth = User.Identity?.IsAuthenticated == true;
     var isLogin = string.Equals(ViewContext.RouteData.Values["page"]?.ToString(), "/Account/Login", StringComparison.OrdinalIgnoreCase)
         || ViewData["IsLoginPage"] as bool? == true;
+    var webrtc = WebRtcOptions.Value;
 }
 <body class="@(isAuth && !isLogin ? "app-shell" : "auth-shell")">
 @if (isAuth && !isLogin)
@@ -39,9 +43,20 @@ else
     <div id="toast-host" class="toast-host" aria-live="polite"></div>
 }
 
+@if (isAuth && !isLogin)
+{
+    <script>
+        window.__webrtcConfig = {
+            sipServer: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(webrtc.SipServer)),
+            sipDomain: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(webrtc.SipDomain)),
+            webSocketUrl: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(webrtc.WebSocketUrl))
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jssip@3.10.1/dist/jssip.min.js" crossorigin="anonymous"></script>
+    <script src="~/js/webrtc/phone-client.js" asp-append-version="true"></script>
+}
 <script src="~/js/site.js" asp-append-version="true"></script>
 <script src="~/js/toast.js" asp-append-version="true"></script>
-<script src="~/js/webrtc/phone-client.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
