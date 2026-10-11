@@ -29,7 +29,10 @@ dotnet run --project CallTarifier.Integration
 dotnet run --project CallTarifier.Web
 ```
 
-Login: usuario Firebase Auth (Email/Password).
+Login: Firebase Auth (Email/Password o **Google**).
+
+En Firebase Console → Authentication → Sign-in method → activar **Google**.
+En Authorized domains incluye `localhost`.
 
 ## Prueba end-to-end
 

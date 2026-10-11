@@ -1,6 +1,7 @@
 (() => {
   const form = document.getElementById('login-form');
   const submit = document.getElementById('login-submit');
+  const googleBtn = document.getElementById('google-login');
   const toggle = document.getElementById('toggle-password');
   const passwordInput = document.getElementById('password-input');
   const emailInput = document.getElementById('Input_Email') || form?.querySelector('input[type="email"]');
@@ -8,28 +9,33 @@
   const errorBox = document.getElementById('login-error');
   const forgotBtn = document.getElementById('forgot-password');
 
-  function setLoading(isLoading) {
-    if (!submit) return;
-    submit.classList.toggle('is-loading', isLoading);
-    submit.toggleAttribute('disabled', isLoading);
-    const label = submit.querySelector('.btn-label');
-    const loading = submit.querySelector('.btn-loading');
-    if (isLoading) {
-      label?.setAttribute('hidden', '');
-      loading?.removeAttribute('hidden');
-    } else {
-      loading?.setAttribute('hidden', '');
-      label?.removeAttribute('hidden');
+  function setLoading(isLoading, which = 'email') {
+    const btn = which === 'google' ? googleBtn : submit;
+    if (!btn) return;
+    btn.classList.toggle('is-loading', isLoading);
+    btn.toggleAttribute('disabled', isLoading);
+    if (which === 'email' && submit) {
+      const label = submit.querySelector('.btn-label');
+      const loading = submit.querySelector('.btn-loading');
+      if (isLoading) {
+        label?.setAttribute('hidden', '');
+        loading?.removeAttribute('hidden');
+      } else {
+        loading?.setAttribute('hidden', '');
+        label?.removeAttribute('hidden');
+      }
     }
+    if (googleBtn) googleBtn.toggleAttribute('disabled', isLoading);
+    if (submit) submit.toggleAttribute('disabled', isLoading);
   }
 
   function showError(message) {
     if (!errorBox) {
-      window.CallTarifierToast?.show(message, 'error');
+      if (message) window.CallTarifierToast?.show(message, 'error');
       return;
     }
-    errorBox.textContent = message;
-    errorBox.classList.add('form-error');
+    errorBox.textContent = message || '';
+    if (message) errorBox.classList.add('form-error');
   }
 
   function mapFirebaseError(code) {
@@ -46,9 +52,26 @@
         return 'Demasiados intentos. Intente más tarde.';
       case 'auth/network-request-failed':
         return 'Error de red. Verifique su conexión.';
+      case 'auth/popup-closed-by-user':
+        return 'Inicio con Google cancelado.';
+      case 'auth/popup-blocked':
+        return 'El navegador bloqueó la ventana de Google. Permita ventanas emergentes.';
+      case 'auth/cancelled-popup-request':
+        return 'Se canceló el inicio con Google.';
+      case 'auth/account-exists-with-different-credential':
+        return 'Ya existe una cuenta con este correo usando otro método.';
+      case 'auth/unauthorized-domain':
+        return 'Este dominio no está autorizado en Firebase (Authorized domains).';
       default:
         return 'No se pudo iniciar sesión. Intente nuevamente.';
     }
+  }
+
+  async function completeLogin(user) {
+    const idToken = await user.getIdToken();
+    if (tokenInput) tokenInput.value = idToken;
+    // Avoid re-triggering the submit listener: use native submit.
+    HTMLFormElement.prototype.submit.call(form);
   }
 
   toggle?.addEventListener('click', () => {
@@ -65,6 +88,8 @@
 
   firebase.initializeApp(window.__firebaseConfig);
   const auth = firebase.auth();
+  const googleProvider = new firebase.auth.GoogleAuthProvider();
+  googleProvider.setCustomParameters({ prompt: 'select_account' });
 
   forgotBtn?.addEventListener('click', async () => {
     const email = (emailInput?.value || '').trim();
@@ -80,7 +105,50 @@
     }
   });
 
+  googleBtn?.addEventListener('click', async () => {
+    setLoading(true, 'google');
+    showError('');
+    try {
+      const result = await auth.signInWithPopup(googleProvider);
+      await completeLogin(result.user);
+    } catch (err) {
+      // Fallback if popup is blocked
+      if (err?.code === 'auth/popup-blocked') {
+        try {
+          await auth.signInWithRedirect(googleProvider);
+          return;
+        } catch (redirectErr) {
+          setLoading(false, 'google');
+          showError(mapFirebaseError(redirectErr?.code));
+          console.error('Google redirect error', redirectErr?.code || redirectErr);
+          return;
+        }
+      }
+      setLoading(false, 'google');
+      showError(mapFirebaseError(err?.code));
+      console.error('Google login error', err?.code || err);
+    }
+  });
+
+  // Complete redirect flow (if popup was blocked previously)
+  auth.getRedirectResult()
+    .then(async (result) => {
+      if (result?.user) {
+        setLoading(true, 'google');
+        await completeLogin(result.user);
+      }
+    })
+    .catch((err) => {
+      showError(mapFirebaseError(err?.code));
+      console.error('Google redirect result error', err?.code || err);
+    });
+
   form?.addEventListener('submit', async (event) => {
+    // Native post after we set IdToken should not be intercepted again.
+    if (tokenInput?.value) {
+      return;
+    }
+
     event.preventDefault();
     const email = (emailInput?.value || '').trim();
     const password = passwordInput?.value || '';
@@ -90,14 +158,12 @@
       return;
     }
 
-    setLoading(true);
+    setLoading(true, 'email');
     try {
       const credential = await auth.signInWithEmailAndPassword(email, password);
-      const idToken = await credential.user.getIdToken();
-      if (tokenInput) tokenInput.value = idToken;
-      form.submit();
+      await completeLogin(credential.user);
     } catch (err) {
-      setLoading(false);
+      setLoading(false, 'email');
       showError(mapFirebaseError(err?.code));
       console.error('Firebase login error', err?.code || err);
     }
