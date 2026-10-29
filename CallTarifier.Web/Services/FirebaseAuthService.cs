@@ -90,14 +90,57 @@ public sealed class FirebaseAuthService : IAuthService
             Uid = decoded.Uid,
             Name = name,
             Email = email,
-            Extension = "4000",
-            Branch = "Carazo",
+            Extension = string.Empty,
+            Branch = string.Empty,
             Role = UserRole.User
         };
 
         user = await EnrichFromFirestoreAsync(user, cancellationToken) ?? user;
+        if (IsE1Owner(user.Email))
+        {
+            user.Extension = E1Owner.Extension;
+            user.Branch = E1Owner.Branch;
+            await SaveChosenExtensionAsync(user, cancellationToken);
+        }
+
         await CreateCookieAsync(user, rememberMe);
         _logger.LogInformation("Firebase sign-in successful for {Email}", user.Email);
+        return user;
+    }
+
+    public async Task<AppUser?> ChooseExtensionAsync(string extension, string branch, CancellationToken cancellationToken = default)
+    {
+        var user = await GetCurrentUserAsync(cancellationToken);
+        if (user is null || string.IsNullOrWhiteSpace(user.Uid))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return null;
+        }
+
+        if (IsE1Owner(user.Email))
+        {
+            extension = E1Owner.Extension;
+            branch = E1Owner.Branch;
+        }
+
+        user.Extension = extension.Trim();
+        user.Branch = branch.Trim();
+        await SaveChosenExtensionAsync(user, cancellationToken);
+
+        var httpContext = _httpContextAccessor.HttpContext;
+        var rememberMe = false;
+        if (httpContext is not null)
+        {
+            var auth = await httpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            rememberMe = auth.Properties?.IsPersistent == true;
+        }
+
+        await CreateCookieAsync(user, rememberMe);
+        _logger.LogInformation("Extension {Extension} chosen for {Email}", user.Extension, user.Email);
         return user;
     }
 
@@ -177,14 +220,22 @@ public sealed class FirebaseAuthService : IAuthService
                 user.Email = email;
             }
 
-            if (snap.ContainsField("extension") && snap.GetValue<string>("extension") is { Length: > 0 } extension)
+            var chosen = false;
+            if (snap.ContainsField("extensionChosen"))
             {
-                user.Extension = extension;
+                chosen = snap.GetValue<object>("extensionChosen") is true;
             }
-
-            if (snap.ContainsField("branch") && snap.GetValue<string>("branch") is { Length: > 0 } branch)
+            if (chosen)
             {
-                user.Branch = branch;
+                if (snap.ContainsField("extension") && snap.GetValue<string>("extension") is { Length: > 0 } extension)
+                {
+                    user.Extension = extension;
+                }
+
+                if (snap.ContainsField("branch") && snap.GetValue<string>("branch") is { Length: > 0 } branch)
+                {
+                    user.Branch = branch;
+                }
             }
 
             if (snap.ContainsField("role") && snap.GetValue<string>("role") is { Length: > 0 } role)
@@ -201,6 +252,41 @@ public sealed class FirebaseAuthService : IAuthService
         }
     }
 
+    private static bool IsE1Owner(string? email) => E1Owner.IsOwner(email);
+
+    private async Task SaveChosenExtensionAsync(AppUser user, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_firebaseOptions.ProjectId) ||
+            string.IsNullOrWhiteSpace(_firebaseOptions.ServiceAccountPath))
+        {
+            return;
+        }
+
+        var path = Path.IsPathRooted(_firebaseOptions.ServiceAccountPath)
+            ? _firebaseOptions.ServiceAccountPath
+            : Path.GetFullPath(Path.Combine(_environment.ContentRootPath, _firebaseOptions.ServiceAccountPath));
+
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        var db = await new FirestoreDbBuilder
+        {
+            ProjectId = _firebaseOptions.ProjectId,
+            Credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(path)
+        }.BuildAsync();
+
+        await db.Collection("users").Document(user.Uid).SetAsync(new Dictionary<string, object>
+        {
+            ["name"] = user.Name,
+            ["email"] = user.Email,
+            ["extension"] = user.Extension,
+            ["branch"] = user.Branch,
+            ["extensionChosen"] = true
+        }, SetOptions.MergeAll, cancellationToken);
+    }
+
     private async Task CreateCookieAsync(AppUser user, bool rememberMe)
     {
         var claims = new List<Claim>
@@ -210,6 +296,7 @@ public sealed class FirebaseAuthService : IAuthService
             new(ClaimTypes.Email, user.Email),
             new("extension", user.Extension),
             new("branch", user.Branch),
+            new("extensionChosen", string.IsNullOrWhiteSpace(user.Extension) ? "false" : "true"),
             new(ClaimTypes.Role, user.Role)
         };
 

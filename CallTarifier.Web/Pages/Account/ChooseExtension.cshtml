@@ -1,0 +1,29 @@
+@page "/account/choose-extension"
+@model CallTarifier.Web.Pages.Account.ChooseExtensionModel
+@{
+    ViewData["Title"] = "Elegir extensión";
+}
+
+<section class="page-header">
+    <div>
+        <h1>Elige tu extensión</h1>
+        <p class="page-subtitle">Esta elección se hace una sola vez. Las llamadas saldrán con ese nombre para que la otra persona sepa quién marca.</p>
+    </div>
+</section>
+
+<section class="panel choose-extension">
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <p class="form-error" role="alert">@Model.ErrorMessage</p>
+    }
+
+    <form method="post" class="extension-list">
+        @foreach (var ext in Model.Extensions)
+        {
+            <button type="submit" name="extension" value="@ext.Extension" class="extension-item">
+                <span class="ext-branch">@ext.Branch</span>
+                <span class="ext-number mono">@ext.Extension</span>
+            </button>
+        }
+    </form>
+</section>

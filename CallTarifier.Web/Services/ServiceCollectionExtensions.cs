@@ -23,9 +23,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAuthService, FirebaseAuthService>();
         services.AddScoped<ICallService, FirestoreCallService>();
         services.AddScoped<IInvoiceService, FirestoreInvoiceService>();
+        services.AddSingleton<IssabelExtensionRefresher>();
         services.AddScoped<IExtensionService, FirestoreExtensionService>();
+        services.AddHostedService<ExtensionCatalogSync>();
         services.AddScoped<IStatisticsService, FirestoreStatisticsService>();
         services.AddScoped<IFirebaseService, FirestoreFirebaseService>();
+        services.AddSingleton<AmiSipSecretReader>();
+        services.AddSingleton<AmiCallService>();
+        services.AddSingleton<PlacedCallRecorder>();
         services.AddScoped<IWebRtcSessionService, WebRtcSessionService>();
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

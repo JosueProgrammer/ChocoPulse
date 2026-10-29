@@ -7,16 +7,21 @@
 <section class="page-header">
     <div>
         <h1>Extensiones</h1>
-        <p class="page-subtitle">Extensiones Isabel PBX 4 (solo lectura en esta versión).</p>
+        <p class="page-subtitle">Extensiones actuales de Issabel.</p>
     </div>
 </section>
+
+@if (!string.IsNullOrWhiteSpace(Model.Notice))
+{
+    <p class="form-error" role="alert">@Model.Notice</p>
+}
 
 <section class="panel">
     <div class="table-wrap">
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Sucursal</th>
+                    <th>Nombre</th>
                     <th class="num">Extensión</th>
                     <th>Estado</th>
                 </tr>

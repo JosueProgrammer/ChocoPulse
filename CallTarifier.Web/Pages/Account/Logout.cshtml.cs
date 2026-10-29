@@ -16,8 +16,9 @@ public class LogoutModel : PageModel
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         await _authService.SignOutAsync(cancellationToken);
+        Response.Cookies.Delete(BacAccessModel.CookieName);
         return RedirectToPage("/Account/Login");
     }
 
-    public IActionResult OnGet() => RedirectToPage("/Dashboard/Index");
+    public Task<IActionResult> OnGetAsync(CancellationToken cancellationToken) => OnPostAsync(cancellationToken);
 }

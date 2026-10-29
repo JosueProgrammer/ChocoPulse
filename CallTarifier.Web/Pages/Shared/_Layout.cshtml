@@ -52,7 +52,7 @@ else
             webSocketUrl: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(webrtc.WebSocketUrl))
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/jssip@3.10.1/dist/jssip.min.js" crossorigin="anonymous"></script>
+    <script src="~/lib/jssip/jssip.min.js" asp-append-version="true"></script>
     <script src="~/js/webrtc/phone-client.js" asp-append-version="true"></script>
 }
 <script src="~/js/site.js" asp-append-version="true"></script>

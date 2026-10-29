@@ -6,6 +6,8 @@ public interface IExtensionService
 {
     Task<IReadOnlyList<ExtensionInfo>> GetAllAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<ExtensionInfo>?> RefreshFromPbxAsync(CancellationToken cancellationToken = default);
+
     Task<ExtensionInfo?> GetByExtensionAsync(string extension, CancellationToken cancellationToken = default);
 
     bool IsValidExtension(string extension);

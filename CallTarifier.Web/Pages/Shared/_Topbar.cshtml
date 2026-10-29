@@ -18,7 +18,10 @@
     <div class="topbar-user">
         <div class="user-meta">
             <strong>@name</strong>
-            <span>@extension · @branch</span>
+            @if (!string.IsNullOrWhiteSpace(extension))
+            {
+                <span>@extension@(string.IsNullOrWhiteSpace(branch) ? "" : $" · {branch}")</span>
+            }
         </div>
         <form method="post" asp-page="/Account/Logout">
             <button type="submit" class="btn btn-ghost btn-sm">Salir</button>

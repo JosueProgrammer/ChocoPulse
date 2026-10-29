@@ -252,7 +252,7 @@ public sealed class AmiListenerService : IAmiListenerService
             return value;
         }
 
-        // Strip SIP/PJSIP channel prefixes if present: PJSIP/4000-00000001 -> 4000
+        // Strip SIP/PJSIP channel prefixes if present: PJSIP/0000-00000001 -> 0000
         var v = value.Trim();
         if (v.Contains('/'))
         {
@@ -261,7 +261,7 @@ public sealed class AmiListenerService : IAmiListenerService
             v = dash > 0 ? afterSlash[..dash] : afterSlash;
         }
 
-        // CallerID like "Name" <4000>
+        // CallerID like "Name" <0000>
         var lt = v.LastIndexOf('<');
         var gt = v.LastIndexOf('>');
         if (lt >= 0 && gt > lt)

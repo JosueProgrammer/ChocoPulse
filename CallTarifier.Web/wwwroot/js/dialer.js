@@ -1,6 +1,5 @@
 window.CallTarifierDialer = (() => {
   function init(options) {
-    const valid = new Set(options?.validExtensions || []);
     const display = document.getElementById('dial-display');
     const error = document.getElementById('dial-error');
     const keypad = document.getElementById('numeric-keypad');
@@ -57,11 +56,6 @@ window.CallTarifierDialer = (() => {
       const extension = (display?.value || '').trim();
       if (!extension) {
         setError('Ingrese o seleccione una extensión.');
-        return;
-      }
-      if (!valid.has(extension)) {
-        setError('La extensión no existe en el directorio.');
-        window.CallTarifierToast?.show('Extensión inválida', 'error');
         return;
       }
 

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using CallTarifier.Web;
 using CallTarifier.Web.Configuration;
 using CallTarifier.Web.Models;
 using Microsoft.Extensions.Options;
@@ -7,29 +8,32 @@ namespace CallTarifier.Web.Services;
 
 public interface IWebRtcSessionService
 {
-    Task<WebRtcSessionConfig?> GetSessionForCurrentUserAsync(CancellationToken cancellationToken = default);
+    Task<WebRtcSessionConfig?> GetSessionForCurrentUserAsync(string? extension = null, CancellationToken cancellationToken = default);
 }
 
 public sealed class WebRtcSessionService : IWebRtcSessionService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IFirestoreDbFactory _dbFactory;
+    private readonly AmiSipSecretReader _amiSipSecrets;
     private readonly WebRtcOptions _options;
     private readonly ILogger<WebRtcSessionService> _logger;
 
     public WebRtcSessionService(
         IHttpContextAccessor httpContextAccessor,
         IFirestoreDbFactory dbFactory,
+        AmiSipSecretReader amiSipSecrets,
         IOptions<WebRtcOptions> options,
         ILogger<WebRtcSessionService> logger)
     {
         _httpContextAccessor = httpContextAccessor;
         _dbFactory = dbFactory;
+        _amiSipSecrets = amiSipSecrets;
         _options = options.Value;
         _logger = logger;
     }
 
-    public async Task<WebRtcSessionConfig?> GetSessionForCurrentUserAsync(CancellationToken cancellationToken = default)
+    public async Task<WebRtcSessionConfig?> GetSessionForCurrentUserAsync(string? extension = null, CancellationToken cancellationToken = default)
     {
         if (!_options.IsConfigured)
         {
@@ -43,11 +47,20 @@ public sealed class WebRtcSessionService : IWebRtcSessionService
             return null;
         }
 
-        var extension = user.FindFirstValue("extension");
+        var chosen = user.FindFirstValue("extension");
+        if (!string.IsNullOrWhiteSpace(chosen))
+        {
+            extension = chosen;
+        }
+        else if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = _options.CallerExtension;
+        }
+
         var uid = user.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(extension))
         {
-            _logger.LogWarning("Authenticated user has no extension claim");
+            _logger.LogWarning("No SIP extension available for WebRTC");
             return null;
         }
 
@@ -61,12 +74,19 @@ public sealed class WebRtcSessionService : IWebRtcSessionService
         }
 
         var domain = _options.SipDomain.Trim();
+        var displayName = user.FindFirstValue("branch");
+        if (string.IsNullOrWhiteSpace(displayName) || displayName == "Desconocida")
+        {
+            displayName = DisplayHelpers.BranchFor(extension);
+        }
+
         return new WebRtcSessionConfig
         {
             WebSocketUrl = _options.WebSocketUrl.Trim(),
             SipDomain = domain,
             SipServer = string.IsNullOrWhiteSpace(_options.SipServer) ? domain : _options.SipServer.Trim(),
             Extension = extension,
+            DisplayName = displayName,
             AuthorizationUsername = extension,
             AuthorizationPassword = secret,
             SipUri = $"sip:{extension}@{domain}",
@@ -114,6 +134,6 @@ public sealed class WebRtcSessionService : IWebRtcSessionService
             _logger.LogWarning(ex, "Could not load SIP secret from Firestore for {Extension}", extension);
         }
 
-        return null;
+        return await _amiSipSecrets.TryGetAsync(extension, cancellationToken);
     }
 }

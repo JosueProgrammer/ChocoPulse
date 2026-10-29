@@ -8,6 +8,8 @@ public interface IAuthService
 
     Task<AppUser?> SignInWithIdTokenAsync(string idToken, bool rememberMe, CancellationToken cancellationToken = default);
 
+    Task<AppUser?> ChooseExtensionAsync(string extension, string branch, CancellationToken cancellationToken = default);
+
     Task SignOutAsync(CancellationToken cancellationToken = default);
 
     Task<AppUser?> GetCurrentUserAsync(CancellationToken cancellationToken = default);

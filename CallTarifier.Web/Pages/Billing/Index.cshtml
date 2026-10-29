@@ -10,6 +10,7 @@
         <h1>Facturación</h1>
         <p class="page-subtitle">Resumen del período y facturas generadas.</p>
     </div>
+    <a class="btn btn-primary" asp-page="/Billing/Index" asp-page-handler="Pdf">Descargar PDF</a>
 </section>
 
 @if (period is not null)

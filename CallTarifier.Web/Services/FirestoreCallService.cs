@@ -83,27 +83,57 @@ public sealed class FirestoreCallService : ICallService
 
     public async Task<DashboardSummary> GetDashboardAsync(string extension, CancellationToken cancellationToken = default)
     {
-        var calls = await GetCallsAsync(new CallFilter { Extension = extension }, cancellationToken);
-        var monthStart = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        var calls = await GetCallsAsync(cancellationToken: cancellationToken);
+        var now = DateTime.Now;
+        var monthStart = new DateTime(now.Year, now.Month, 1);
+        var month = calls.Where(c => c.StartedAt >= monthStart).ToList();
+        var central = extension == "1000";
+        var own = string.IsNullOrWhiteSpace(extension)
+            ? month
+            : month.Where(c => c.Source == extension || c.Destination == extension).ToList();
+        var billed = central ? month : own.Where(c => c.Source == extension).ToList();
 
         var db = await _dbFactory.GetDbAsync(cancellationToken);
         var pendingSnap = await db.Collection("invoices")
             .WhereEqualTo("status", InvoiceStatus.Pending)
             .GetSnapshotAsync(cancellationToken);
+        var pending = pendingSnap.Documents.Select(FirestoreMappers.MapInvoice);
+        if (!central && !string.IsNullOrWhiteSpace(extension))
+        {
+            pending = pending.Where(invoice => invoice.Source == extension);
+        }
+
+        var breakdownSource = central ? month : billed;
+        var byExtension = breakdownSource
+            .GroupBy(c => string.IsNullOrWhiteSpace(c.Source) ? "—" : c.Source)
+            .Select(group => new ExtensionConsumption
+            {
+                Extension = group.Key,
+                Name = DisplayHelpers.BranchFor(group.Key),
+                Calls = group.Count(),
+                Subtotal = group.Sum(c => c.Subtotal),
+                Tax = group.Sum(c => c.Tax),
+                Total = group.Sum(c => c.Total)
+            })
+            .OrderBy(row => row.Extension)
+            .ToList();
 
         return new DashboardSummary
         {
             UserName = string.Empty,
             Extension = extension,
             Branch = DisplayHelpers.BranchFor(extension),
-            OutgoingCalls = calls.Count(c => c.Source == extension),
-            IncomingCalls = calls.Count(c => c.Destination == extension),
-            MonthCalls = calls.Count(c => c.StartedAt >= monthStart),
-            AccumulatedCost = calls
-                .Where(c => c.Source == extension && c.Status == CallStatus.Completed)
-                .Sum(c => c.Total),
-            PendingInvoices = pendingSnap.Count,
-            RecentCalls = calls.OrderByDescending(c => c.StartedAt).Take(5).ToList()
+            OutgoingCalls = own.Count(c => c.Source == extension),
+            IncomingCalls = own.Count(c => c.Destination == extension),
+            MonthCalls = billed.Count,
+            MonthSubtotal = billed.Sum(c => c.Subtotal),
+            MonthTax = billed.Sum(c => c.Tax),
+            AccumulatedCost = billed.Sum(c => c.Total),
+            DaysUntilBilling = DateTime.DaysInMonth(now.Year, now.Month) - now.Day,
+            ShowsAllExtensions = central,
+            PendingInvoices = pending.Count(),
+            RecentCalls = own.OrderByDescending(c => c.StartedAt).Take(8).ToList(),
+            ByExtension = byExtension
         };
     }
 }

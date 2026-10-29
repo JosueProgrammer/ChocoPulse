@@ -55,30 +55,54 @@ public sealed class FirebaseService : IFirebaseService
     {
         var db = await GetDbAsync(cancellationToken);
 
-        var extensions = new (string Ext, string Branch)[]
+        var extensions = new (string Ext, string Name)[]
         {
-            ("4000", "Carazo"),
-            ("4021", "Masaya"),
-            ("4041", "Rivas"),
-            ("4061", "Granada"),
-            ("4101", "León"),
-            ("4121", "Boaco"),
-            ("4141", "Managua")
+            ("1000", "E1"),
+            ("1010", "Central Carazo Bac"),
+            ("1011", "Gerencia de sucursal"),
+            ("1012", "Atención al cliente"),
+            ("1013", "Caja Central"),
+            ("1014", "Creditos"),
+            ("1015", "Seguridad"),
+            ("1016", "Contabilidad"),
+            ("1017", "Soporte Tecnico"),
+            ("1040", "Granada BAC"),
+            ("1041", "Gerencia de sucursal"),
+            ("1042", "Atención al cliente GR"),
+            ("1043", "Caja Central GR"),
+            ("1044", "Creditos GR"),
+            ("1045", "Seguridad GR"),
+            ("1046", "Contabilidad GR"),
+            ("1047", "Soporte Tecnico GR"),
+            ("2000", "Oficina de Estados unidos"),
+            ("2030", "Oficina de Costa Rica"),
+            ("2060", "Oficina de Panama"),
+            ("2090", "Oficina de España"),
+            ("2120", "Oficina de México"),
+            ("82361811", "Claro"),
+            ("83922921", "Tigo")
         };
 
-        foreach (var (ext, branch) in extensions)
+        foreach (var (ext, name) in extensions)
         {
             var doc = db.Collection("extensions").Document(ext);
-            var snap = await doc.GetSnapshotAsync(cancellationToken);
-            if (!snap.Exists)
+            var existing = await doc.GetSnapshotAsync(cancellationToken);
+            if (existing.Exists)
             {
-                await doc.SetAsync(new Dictionary<string, object>
-                {
-                    ["extension"] = ext,
-                    ["branch"] = branch,
-                    ["status"] = "Disponible"
-                }, cancellationToken: cancellationToken);
+                continue;
             }
+
+            await doc.SetAsync(new Dictionary<string, object>
+            {
+                ["extension"] = ext,
+                ["branch"] = name,
+                ["status"] = "Disponible"
+            }, cancellationToken: cancellationToken);
+        }
+
+        foreach (var obsolete in new[] { "4000", "4021", "4041", "4061", "4101", "4121", "4141" })
+        {
+            await db.Collection("extensions").Document(obsolete).DeleteAsync(cancellationToken: cancellationToken);
         }
 
         var tariffDoc = db.Collection("settings").Document("tariffs");

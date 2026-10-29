@@ -10,6 +10,8 @@ public sealed class WebRtcSessionConfig
 
     public string Extension { get; init; } = string.Empty;
 
+    public string DisplayName { get; init; } = string.Empty;
+
     public string AuthorizationUsername { get; init; } = string.Empty;
 
     public string AuthorizationPassword { get; init; } = string.Empty;

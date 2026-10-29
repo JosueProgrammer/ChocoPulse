@@ -81,20 +81,13 @@ public sealed class CallProcessor : ICallProcessor
             ? (cdr.BillableSeconds > 0 ? cdr.BillableSeconds : cdr.DurationSeconds)
             : 0;
 
-        var ringCharge = answered || _tariffs.ChargeRingForUnansweredCalls
-            ? _tariffs.RingCharge
-            : 0m;
-
         if (!answered)
         {
             duration = 0;
-            if (!_tariffs.ChargeRingForUnansweredCalls)
-            {
-                ringCharge = 0m;
-            }
         }
 
-        var tariff = _tarification.Calculate(duration, ringCharge, _tariffs.PricePerSecond, _tariffs.TaxRate);
+        var kind = CallPricing.KindFor(cdr.Source ?? string.Empty, cdr.Destination ?? string.Empty);
+        var tariff = CallPricing.Quote(_tariffs, kind, answered, duration);
         var callId = string.IsNullOrWhiteSpace(cdr.UniqueId)
             ? Guid.NewGuid().ToString("N")
             : cdr.UniqueId.Replace('.', '-');

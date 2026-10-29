@@ -1,0 +1,35 @@
+@page "/account/acceso"
+@model CallTarifier.Web.Pages.Account.BacAccessModel
+@{
+    ViewData["Title"] = "Acceso BAC";
+    ViewData["IsLoginPage"] = true;
+}
+
+<div class="login-page">
+    <div class="login-panel">
+        <div class="login-brand">
+            <img class="brand-logo large" src="~/images/bac-logo.jpg" alt="BAC" />
+            <h1>Acceso BAC</h1>
+            <p>Escribe tu correo de dominio para abrir la plataforma.</p>
+        </div>
+
+        <form method="post" class="login-form" novalidate>
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <p class="form-error" role="alert">@Model.ErrorMessage</p>
+            }
+
+            <div class="field">
+                <label asp-for="Email">Correo de dominio</label>
+                <input asp-for="Email" type="email" autocomplete="username" placeholder="nombre@bac.com" />
+            </div>
+
+            <div class="field">
+                <label asp-for="Password">Contraseña</label>
+                <input asp-for="Password" type="password" autocomplete="current-password" placeholder="••••••••" />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        </form>
+    </div>
+</div>

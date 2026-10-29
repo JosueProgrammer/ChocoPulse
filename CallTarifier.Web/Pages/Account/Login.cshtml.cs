@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using CallTarifier.Web.Configuration;
 using CallTarifier.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -36,7 +37,8 @@ public class LoginModel : PageModel
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            Response.Redirect("/dashboard");
+            var chosen = string.Equals(User.FindFirst("extensionChosen")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+            Response.Redirect(chosen ? "/dashboard" : "/account/choose-extension");
             return;
         }
 
@@ -59,6 +61,11 @@ public class LoginModel : PageModel
             ModelState.AddModelError(string.Empty, "Sesión de Firebase inválida o expirada.");
             _logger.LogWarning("Firebase ID token verification failed");
             return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Extension))
+        {
+            return RedirectToPage("/Account/ChooseExtension");
         }
 
         if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))

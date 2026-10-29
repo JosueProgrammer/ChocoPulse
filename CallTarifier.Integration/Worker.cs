@@ -38,13 +38,22 @@ public sealed class Worker : BackgroundService
     {
         _logger.LogInformation("CallTarifier.Integration started (live AMI/CDR/Firebase)");
 
-        try
+        for (var attempt = 1; attempt <= 3; attempt++)
         {
-            await _firebaseService.EnsureSeedAsync(stoppingToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Firestore seed failed; continuing AMI loop");
+            try
+            {
+                await _firebaseService.EnsureSeedAsync(stoppingToken);
+                break;
+            }
+            catch (Exception ex) when (attempt < 3 && !stoppingToken.IsCancellationRequested)
+            {
+                _logger.LogWarning(ex, "Firestore seed timed out (attempt {Attempt}/3); retrying", attempt);
+                await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Firestore seed failed; continuing AMI loop");
+            }
         }
 
         await _amiListener.StartAsync(stoppingToken);

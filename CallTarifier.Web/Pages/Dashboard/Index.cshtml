@@ -5,11 +5,11 @@
     var s = Model.Summary;
     var cards = new[]
     {
-        new StatCardModel { Title = "Llamadas del mes", Value = s.MonthCalls.ToString(), Hint = "Realizadas y recibidas" },
-        new StatCardModel { Title = "Consumo acumulado", Value = DisplayHelpers.FormatMoney(s.AccumulatedCost), Hint = "Mes en curso" },
-        new StatCardModel { Title = "Facturas pendientes", Value = s.PendingInvoices.ToString(), Hint = "Por pagar" },
-        new StatCardModel { Title = "Salientes", Value = s.OutgoingCalls.ToString(), Hint = "Histórico mock" },
-        new StatCardModel { Title = "Entrantes", Value = s.IncomingCalls.ToString(), Hint = "Histórico mock" }
+        new StatCardModel { Title = "Consumo acumulado", Value = DisplayHelpers.FormatMoney(s.MonthSubtotal), Hint = "Mes en curso, sin IVA" },
+        new StatCardModel { Title = "IVA 15%", Value = DisplayHelpers.FormatMoney(s.MonthTax), Hint = "Sobre el consumo del mes" },
+        new StatCardModel { Title = "Total con IVA", Value = DisplayHelpers.FormatMoney(s.AccumulatedCost), Hint = s.ShowsAllExtensions ? "Cobro del E1 BAC 1000" : "Tu extensión" },
+        new StatCardModel { Title = "Días para el cierre", Value = s.DaysUntilBilling.ToString(), Hint = "Facturación al final del mes" },
+        new StatCardModel { Title = "Llamadas del mes", Value = s.MonthCalls.ToString(), Hint = "Registradas en el periodo" }
     };
 }
 
@@ -17,8 +17,11 @@
     <div>
         <h1>Hola, @s.UserName.Split(' ').FirstOrDefault()</h1>
         <p class="page-subtitle">
-            Extensión: <strong class="mono">@s.Extension</strong>
-            · Sucursal: <strong>@s.Branch</strong>
+            E1 BAC <strong class="mono">1000</strong>
+            @if (!string.IsNullOrWhiteSpace(s.Extension))
+            {
+                <text> · Tu extensión <strong class="mono">@s.Extension</strong> @s.Branch</text>
+            }
         </p>
     </div>
     <a class="btn btn-primary" asp-page="/Calls/Dial">Nueva llamada</a>
@@ -28,6 +31,47 @@
     @foreach (var card in cards)
     {
         <partial name="Partials/_StatCard" model="card" />
+    }
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>@(s.ShowsAllExtensions ? "Consumo de todas las extensiones" : "Consumo de tu extensión")</h2>
+        <span class="page-subtitle">@s.PendingInvoices facturas pendientes</span>
+    </div>
+    @if (s.ByExtension.Count == 0)
+    {
+        <p class="call-note">Todavía no hay consumo registrado en este mes.</p>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Extensión</th>
+                        <th>Nombre</th>
+                        <th class="num">Llamadas</th>
+                        <th class="num">Consumo</th>
+                        <th class="num">IVA</th>
+                        <th class="num">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in s.ByExtension)
+                {
+                    <tr>
+                        <td class="mono">@row.Extension</td>
+                        <td>@row.Name</td>
+                        <td class="num">@row.Calls</td>
+                        <td class="num">@DisplayHelpers.FormatMoney(row.Subtotal)</td>
+                        <td class="num">@DisplayHelpers.FormatMoney(row.Tax)</td>
+                        <td class="num">@DisplayHelpers.FormatMoney(row.Total)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
     }
 </section>
 

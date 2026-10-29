@@ -27,11 +27,15 @@
     <article class="panel">
         <h2>Tarifas</h2>
         <dl class="detail-list">
-            <div><dt>Cargo de conexión</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.RingCharge)</dd></div>
-            <div><dt>Precio por segundo</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.PricePerSecond)</dd></div>
-            <div><dt>Precio por minuto</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.PricePerMinute)</dd></div>
+            <div><dt>Local</dt><dd>Sin cobro hasta @Model.Tariffs.LocalFreeMinutes min, luego @DisplayHelpers.FormatMoney(Model.Tariffs.LocalAfterQuota)</dd></div>
+            <div><dt>Interlocal, por minuto</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.InterlocalPerMinute)</dd></div>
+            <div><dt>Entre E1, por minuto</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.EntreE1PerMinute)</dd></div>
+            <div><dt>Claro, por minuto</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.ClaroPerMinute)</dd></div>
+            <div><dt>Tigo, por minuto</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.TigoPerMinute)</dd></div>
+            <div><dt>Internacional, por minuto</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.InternacionalPerMinute)</dd></div>
+            <div><dt>Mínimo contestada</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.MinimumAnswered)</dd></div>
+            <div><dt>Intento no contestado</dt><dd>@DisplayHelpers.FormatMoney(Model.Tariffs.UnansweredAttempt)</dd></div>
             <div><dt>IVA</dt><dd>@((Model.Tariffs.TaxRate * 100).ToString("0"))%</dd></div>
-            <div><dt>Cargo ring en no contestadas</dt><dd>@(Model.Tariffs.ChargeRingForUnansweredCalls ? "Sí" : "No")</dd></div>
         </dl>
     </article>
 
@@ -41,7 +45,7 @@
             <div><dt>Nombre</dt><dd>@Model.CurrentUser?.Name</dd></div>
             <div><dt>Correo</dt><dd>@Model.CurrentUser?.Email</dd></div>
             <div><dt>Extensión</dt><dd class="mono">@Model.CurrentUser?.Extension</dd></div>
-            <div><dt>Sucursal</dt><dd>@Model.CurrentUser?.Branch</dd></div>
+            <div><dt>Nombre</dt><dd>@Model.CurrentUser?.Branch</dd></div>
             <div><dt>Rol</dt><dd>@Model.CurrentUser?.Role</dd></div>
         </dl>
     </article>

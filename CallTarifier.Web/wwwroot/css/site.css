@@ -1,25 +1,25 @@
 :root {
-  --bg: #e8eef4;
-  --bg-accent: #d5e2ec;
+  --bg: #f4f6f8;
+  --bg-accent: #e7ebf0;
   --surface: #ffffff;
-  --surface-muted: #f5f8fb;
-  --sidebar: #102033;
-  --sidebar-hover: #183049;
-  --sidebar-text: #c5d4e4;
+  --surface-muted: #f7f8fa;
+  --sidebar: #1b2430;
+  --sidebar-hover: #273244;
+  --sidebar-text: #d5deea;
   --sidebar-active: #ffffff;
-  --text: #152033;
-  --text-muted: #5b6b7c;
-  --border: #d3dde8;
-  --accent: #0f766e;
-  --accent-hover: #0d5f59;
-  --accent-soft: #d9f3ef;
+  --text: #1c2430;
+  --text-muted: #5c6b7c;
+  --border: #dde3ec;
+  --accent: #d0121a;
+  --accent-hover: #a80e15;
+  --accent-soft: #fdecee;
   --danger: #b42318;
   --danger-soft: #fde8e6;
   --warning: #b54708;
   --warning-soft: #fff1e0;
   --success: #067647;
   --success-soft: #e4f7ec;
-  --shadow: 0 10px 30px rgba(16, 32, 51, 0.08);
+  --shadow: 0 10px 30px rgba(27, 36, 48, 0.08);
   --radius: 14px;
   --radius-sm: 10px;
   --font: "IBM Plex Sans", "Segoe UI", sans-serif;
@@ -39,8 +39,8 @@ html, body {
   font-family: var(--font);
   color: var(--text);
   background:
-    radial-gradient(1200px 500px at 10% -10%, #cfe3f0 0%, transparent 55%),
-    radial-gradient(900px 400px at 100% 0%, #d7efe9 0%, transparent 45%),
+    radial-gradient(1200px 500px at 10% -10%, #e7edf5 0%, transparent 55%),
+    radial-gradient(900px 400px at 100% 0%, #f8e8ea 0%, transparent 45%),
     var(--bg);
 }
 
@@ -80,7 +80,7 @@ a:hover { text-decoration: underline; }
 }
 
 .sidebar {
-  background: linear-gradient(180deg, #102033 0%, #0c1828 100%);
+  background: linear-gradient(180deg, #1b2430 0%, #121820 100%);
   color: var(--sidebar-text);
   padding: 1.25rem 1rem;
   display: flex;
@@ -99,19 +99,23 @@ a:hover { text-decoration: underline; }
   padding: 0.25rem 0.5rem;
 }
 
-.brand-mark {
-  width: 34px;
+.brand-logo {
   height: 34px;
-  border-radius: 10px;
-  background:
-    linear-gradient(135deg, #14b8a6, #0f766e 55%, #164e63);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  padding: 2px 6px;
   flex: 0 0 auto;
 }
 
-.brand-mark.large {
-  width: 48px;
-  height: 48px;
+.brand-logo.large {
+  display: block;
+  height: 78px;
+  max-width: 280px;
+  margin: 0 auto;
+  padding: 6px 12px;
   border-radius: 14px;
 }
 
@@ -123,7 +127,7 @@ a:hover { text-decoration: underline; }
 .brand-tag {
   display: block;
   font-size: 0.75rem;
-  color: #8ea3b8;
+  color: #9aabbd;
 }
 
 .sidebar-close {
@@ -160,9 +164,9 @@ a:hover { text-decoration: underline; }
 }
 
 .nav-link.active {
-  background: rgba(20, 184, 166, 0.18);
+  background: rgba(208, 18, 26, 0.2);
   color: var(--sidebar-active);
-  box-shadow: inset 3px 0 0 #14b8a6;
+  box-shadow: inset 3px 0 0 #d0121a;
 }
 
 .nav-icon {
@@ -579,7 +583,7 @@ a:hover { text-decoration: underline; }
 }
 .chip.active, .chip:hover {
   background: var(--accent-soft);
-  border-color: #99d8d0;
+  border-color: #f3c4c7;
   color: var(--accent);
   text-decoration: none;
 }
@@ -602,7 +606,7 @@ a:hover { text-decoration: underline; }
 .bar {
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #14b8a6, #0f766e);
+  background: linear-gradient(90deg, #e23b42, #d0121a);
   width: var(--w, 20%);
   max-width: 100%;
 }
@@ -647,7 +651,7 @@ a:hover { text-decoration: underline; }
 .keypad-key:active,
 .keypad-key:hover {
   background: var(--accent-soft);
-  border-color: #99d8d0;
+  border-color: #f3c4c7;
 }
 
 .dialer-actions {
@@ -697,9 +701,9 @@ a:hover { text-decoration: underline; }
   place-items: center;
   padding: 1.5rem;
   background:
-    radial-gradient(900px 420px at 15% 10%, #c8e7e2 0%, transparent 50%),
-    radial-gradient(700px 380px at 90% 85%, #c5d9ea 0%, transparent 45%),
-    linear-gradient(160deg, #f3f7fb, #e7eef5);
+    radial-gradient(900px 420px at 15% 10%, #f8e8ea 0%, transparent 50%),
+    radial-gradient(700px 380px at 90% 85%, #e7edf5 0%, transparent 45%),
+    linear-gradient(160deg, #f7f8fa, #e8edf3);
 }
 
 .login-panel {
@@ -862,7 +866,7 @@ a:hover { text-decoration: underline; }
 }
 
 .toast {
-  background: #102033;
+  background: #1b2430;
   color: #fff;
   padding: 0.85rem 1rem;
   border-radius: 12px;

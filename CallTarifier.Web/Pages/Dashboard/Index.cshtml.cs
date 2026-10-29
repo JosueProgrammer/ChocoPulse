@@ -18,7 +18,7 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        var extension = User.FindFirstValue("extension") ?? "4000";
+        var extension = User.FindFirstValue("extension") ?? string.Empty;
         Summary = await _callService.GetDashboardAsync(extension, cancellationToken);
         Summary.UserName = User.FindFirstValue(ClaimTypes.Name) ?? "Usuario";
         Summary.Branch = User.FindFirstValue("branch") ?? Summary.Branch;

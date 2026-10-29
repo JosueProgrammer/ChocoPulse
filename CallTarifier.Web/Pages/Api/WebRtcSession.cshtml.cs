@@ -18,15 +18,17 @@ public class WebRtcSessionModel : PageModel
         _logger = logger;
     }
 
-    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(string? extension, CancellationToken cancellationToken)
     {
-        var session = await _webRtcSessionService.GetSessionForCurrentUserAsync(cancellationToken);
+        var session = await _webRtcSessionService.GetSessionForCurrentUserAsync(extension, cancellationToken);
         if (session is null)
         {
-            _logger.LogWarning("WebRTC session unavailable for current user");
+            _logger.LogWarning("WebRTC session unavailable for extension {Extension}", extension);
             return new JsonResult(new
             {
-                error = "WebRTC no disponible. Configure WSS y el sipSecret de su extensión."
+                error = string.IsNullOrWhiteSpace(extension)
+                    ? "Elige tu extensión antes de llamar."
+                    : $"La extensión {extension} no pudo identificarse en la central."
             })
             {
                 StatusCode = StatusCodes.Status503ServiceUnavailable
@@ -42,6 +44,7 @@ public class WebRtcSessionModel : PageModel
             sipDomain = session.SipDomain,
             sipServer = session.SipServer,
             extension = session.Extension,
+            displayName = session.DisplayName,
             authorizationUsername = session.AuthorizationUsername,
             authorizationPassword = session.AuthorizationPassword,
             sipUri = session.SipUri,
